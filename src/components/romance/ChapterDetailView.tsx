@@ -68,7 +68,7 @@ interface GameProgress {
   chaptersCompleted: number[]
   gamesCompleted: string[]
   perfectChapters: number[]
-  storyEnding: 'incomplete' | 'bad' | 'good' | 'perfect' | 'failed'
+  storyEnding: 'incomplete' | 'bad' | 'okay' | 'good' | 'perfect' | 'failed'
 }
 
 interface ChapterDetailProps {

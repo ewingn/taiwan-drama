@@ -1,6 +1,7 @@
 // src/data/storyChapters.ts
 import { StoryChapter } from '../types'
 
+
 export const storyChapters: StoryChapter[] = [
   {
     id: 1,

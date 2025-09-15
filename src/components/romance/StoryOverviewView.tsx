@@ -1,34 +1,7 @@
-// src/components/romance/StoryOverviewView.tsx
+// src/components/romance/StoryOverviewView.tsx (Fixed - using proper types)
 import React from 'react'
 import { ArrowRight, Star, Heart, Gamepad2, MessageCircle, Lock, ChevronRight, Award, Target } from 'lucide-react'
-
-interface StoryChapter {
-  id: number
-  title: string
-  subtitle: string
-  description: string
-  setting: string
-  timeOfDay: string
-  mood: string
-  unlocked: boolean
-  completed: boolean
-  keyVocabulary: any[]
-  miniGames: any[]
-  voicePractice: {
-    affectionReward: number
-  }
-  requiredAffection: number
-  perfectAffection: number
-}
-
-interface GameProgress {
-  currentChapter: number
-  totalAffection: number
-  chaptersCompleted: number[]
-  gamesCompleted: string[]
-  perfectChapters: number[]
-  storyEnding: 'incomplete' | 'bad' | 'good' | 'perfect' | 'failed'
-}
+import type { StoryChapter, GameProgress, AffectionStatus } from '../../types'
 
 interface StoryOverviewProps {
   chapters: StoryChapter[]
@@ -51,7 +24,7 @@ const StoryOverviewView: React.FC<StoryOverviewProps> = ({
   onChapterSelect,
   onBack
 }) => {
-  const getAffectionStatus = () => {
+  const getAffectionStatus = (): AffectionStatus => {
     const affection = gameProgress.totalAffection
     if (affection >= 180) return { emoji: '💕', text: 'Deeply in Love', color: 'text-red-600' }
     if (affection >= 150) return { emoji: '😍', text: 'Strong Romance', color: 'text-pink-600' }

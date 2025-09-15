@@ -546,19 +546,19 @@ const useTextToSpeech = () => {
   const speak = (text: string, character?: Character) => {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text)
-      
+
       if (character) {
         utterance.pitch = character.voiceSettings.pitch
         utterance.rate = character.voiceSettings.rate
       }
-      
+
       // Try to use Chinese voice
       const voices = speechSynthesis.getVoices()
       const chineseVoice = voices.find(voice => voice.lang.includes('zh'))
       if (chineseVoice) {
         utterance.voice = chineseVoice
       }
-      
+
       speechSynthesis.speak(utterance)
     }
   }
@@ -574,14 +574,14 @@ const useTextToSpeech = () => {
 
 // Enhanced Components
 
-const AffectionMeter = ({ 
-  currentAffection, 
-  maxAffection = 100, 
-  recentChange 
-}: { 
+const AffectionMeter = ({
+  currentAffection,
+  maxAffection = 100,
+  recentChange
+}: {
   currentAffection: number
   maxAffection?: number
-  recentChange?: number 
+  recentChange?: number
 }) => {
   const percentage = (currentAffection / maxAffection) * 100
   const [showChange, setShowChange] = useState(false)
@@ -592,7 +592,7 @@ const AffectionMeter = ({
       setTimeout(() => setShowChange(false), 2000)
     }
   }, [recentChange])
-  
+
   return (
     <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border relative">
       <div className="flex items-center justify-between mb-2">
@@ -609,7 +609,7 @@ const AffectionMeter = ({
         </div>
       </div>
       <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3 relative overflow-hidden">
-        <div 
+        <div
           className={`h-full rounded-full transition-all duration-500 relative ${
             percentage >= 80 ? 'bg-gradient-to-r from-pink-400 to-red-500' :
             percentage >= 50 ? 'bg-gradient-to-r from-yellow-400 to-orange-500' :
@@ -626,7 +626,7 @@ const AffectionMeter = ({
         <span>😍</span>
         <span>💕</span>
       </div>
-      
+
       {/* Affection Status */}
       <div className="mt-2 text-center">
         <span className={`text-xs px-2 py-1 rounded-full ${
@@ -676,12 +676,12 @@ const GameStats = ({ gameState }: { gameState: GameState }) => {
   )
 }
 
-const TimedChallengeInterface = ({ 
-  challenge, 
-  onComplete 
-}: { 
+const TimedChallengeInterface = ({
+  challenge,
+  onComplete
+}: {
   challenge: TimedChallenge
-  onComplete: (success: boolean, score: number, timeLeft: number) => void 
+  onComplete: (success: boolean, score: number, timeLeft: number) => void
 }) => {
   const [timeLeft, setTimeLeft] = useState(challenge.timeLimit)
   const [gameStarted, setGameStarted] = useState(false)
@@ -742,15 +742,15 @@ const TimedChallengeInterface = ({
         ) : gameEnded ? (
           <div className="text-center">
             <div className="text-4xl mb-4">
-              {score >= challenge.data.pairs.length * 0.8 ? '🌟' : 
+              {score >= challenge.data.pairs.length * 0.8 ? '🌟' :
                score >= challenge.data.pairs.length * 0.6 ? '👍' : '😅'}
             </div>
             <div className="text-2xl font-bold mb-2">
               {score}/{challenge.data.pairs.length} Correct
             </div>
             <div className="text-lg text-gray-600 mb-4">
-              {score >= challenge.data.pairs.length * 0.8 ? 'Perfect! Amazing work!' : 
-               score >= challenge.data.pairs.length * 0.6 ? 'Good job! Keep practicing!' : 
+              {score >= challenge.data.pairs.length * 0.8 ? 'Perfect! Amazing work!' :
+               score >= challenge.data.pairs.length * 0.6 ? 'Good job! Keep practicing!' :
                'Keep trying! You\'ll get it!'}
             </div>
           </div>
@@ -759,7 +759,7 @@ const TimedChallengeInterface = ({
             {/* Timer */}
             <div className="flex items-center justify-center mb-4">
               <div className={`text-2xl font-bold ${
-                timeLeft <= 5 ? 'text-red-500 animate-pulse' : 
+                timeLeft <= 5 ? 'text-red-500 animate-pulse' :
                 timeLeft <= 10 ? 'text-orange-500' : 'text-green-500'
               }`}>
                 <Timer className="w-6 h-6 inline mr-2" />
@@ -808,14 +808,14 @@ const TimedChallengeInterface = ({
   return <div>Challenge type not implemented yet</div>
 }
 
-const VoiceInteractionInterface = ({ 
-  interaction, 
+const VoiceInteractionInterface = ({
+  interaction,
   character,
-  onComplete 
-}: { 
+  onComplete
+}: {
   interaction: VoiceInteraction
   character: Character
-  onComplete: (success: boolean, affectionChange: number) => void 
+  onComplete: (success: boolean, affectionChange: number) => void
 }) => {
   const { isListening, transcript, confidence, startListening, stopListening } = useVoiceRecognition()
   const { speak, stop } = useTextToSpeech()
@@ -850,12 +850,12 @@ const VoiceInteractionInterface = ({
   }
 
   const checkResponse = (response: string) => {
-    const isCorrect = interaction.correctResponses.some(correct => 
+    const isCorrect = interaction.correctResponses.some(correct =>
       response.includes(correct)
     )
-    
+
     setIsComplete(true)
-    
+
     if (isCorrect) {
       onComplete(true, interaction.affectionReward)
     } else {
@@ -897,7 +897,7 @@ const VoiceInteractionInterface = ({
         <div className="text-center">
           {/* Timer */}
           <div className={`text-3xl font-bold mb-4 ${
-            timeLeft <= 2 ? 'text-red-500 animate-pulse' : 
+            timeLeft <= 2 ? 'text-red-500 animate-pulse' :
             timeLeft <= 5 ? 'text-orange-500' : 'text-blue-500'
           }`}>
             <Clock className="w-8 h-8 inline mr-2" />
@@ -920,8 +920,8 @@ const VoiceInteractionInterface = ({
               onTouchStart={startListening}
               onTouchEnd={stopListening}
               className={`w-full py-8 rounded-lg font-bold text-lg transition-all ${
-                isListening 
-                  ? 'bg-red-500 text-white scale-105 shadow-lg' 
+                isListening
+                  ? 'bg-red-500 text-white scale-105 shadow-lg'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
@@ -953,8 +953,8 @@ const VoiceInteractionInterface = ({
             {interaction.affectionReward > 0 ? 'Perfect Response!' : 'Try Again Next Time!'}
           </div>
           <div className="text-sm text-gray-600">
-            {interaction.affectionReward > 0 
-              ? `+${interaction.affectionReward} Affection` 
+            {interaction.affectionReward > 0
+              ? `+${interaction.affectionReward} Affection`
               : `${interaction.affectionPenalty} Affection`}
           </div>
         </div>
@@ -963,12 +963,12 @@ const VoiceInteractionInterface = ({
   )
 }
 
-const StoryScenePlayer = ({ 
-  scene, 
-  onComplete 
-}: { 
+const StoryScenePlayer = ({
+  scene,
+  onComplete
+}: {
   scene: StoryScene
-  onComplete: (affectionChange: number) => void 
+  onComplete: (affectionChange: number) => void
 }) => {
   const [currentDialogue, setCurrentDialogue] = useState(0)
   const [showChoices, setShowChoices] = useState(false)
@@ -1040,7 +1040,7 @@ const StoryScenePlayer = ({
             </button>
           </div>
         </div>
-        
+
         <div className="space-y-2">
           <div className="text-lg font-medium">{currentLine.chinese}</div>
           <div className="text-sm text-blue-600">({currentLine.pinyin})</div>
@@ -1057,8 +1057,8 @@ const StoryScenePlayer = ({
               key={index}
               onClick={() => handleChoice(choice)}
               className={`w-full p-3 rounded-lg text-left transition-all border-2 ${
-                choice.affectionChange > 0 
-                  ? 'border-green-200 bg-green-50 hover:bg-green-100' 
+                choice.affectionChange > 0
+                  ? 'border-green-200 bg-green-50 hover:bg-green-100'
                   : choice.affectionChange < 0
                   ? 'border-red-200 bg-red-50 hover:bg-red-100'
                   : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
@@ -1108,7 +1108,7 @@ const StoryScenePlayer = ({
           <span>{currentDialogue + 1} / {scene.dialogue.length}</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-1">
-          <div 
+          <div
             className="bg-blue-500 h-1 rounded-full transition-all duration-300"
             style={{ width: `${((currentDialogue + 1) / scene.dialogue.length) * 100}%` }}
           />
@@ -1153,14 +1153,14 @@ const GamifiedRomanceLearningPath: React.FC<{ onBack: () => void }> = ({ onBack 
 
   const handleSceneComplete = (affectionChange: number) => {
     handleAffectionChange(affectionChange)
-    
+
     if (scene) {
       setUserProgress(prev => ({
         ...prev,
         completedScenes: [...prev.completedScenes, scene.id]
       }))
     }
-    
+
     // Move to next scene or complete episode
     if (currentScene < episode.scenes.length - 1) {
       setCurrentScene(currentScene + 1)
@@ -1169,7 +1169,7 @@ const GamifiedRomanceLearningPath: React.FC<{ onBack: () => void }> = ({ onBack 
       alert(`🎉 Episode ${episode.id} completed! ${episode.checkpointReward.content}`)
       setCurrentScene(0)
     }
-    
+
     setShowSceneContent(false)
   }
 
@@ -1191,26 +1191,26 @@ const GamifiedRomanceLearningPath: React.FC<{ onBack: () => void }> = ({ onBack 
               <ArrowRight className="w-4 h-4 rotate-180" />
               Back
             </button>
-            
+
             <div className="text-center flex-1 mx-4">
               <h1 className="text-lg font-bold text-gray-800 truncate">
                 {scene.title}
               </h1>
               <p className="text-xs text-gray-600">Episode {episode.id}: {episode.title}</p>
             </div>
-            
+
             <div className="text-right text-xs">
               <div className="text-gray-600">💕 {userProgress.affection}</div>
               <div className="text-blue-600">⚡ {gameState.currentStreak}</div>
             </div>
           </div>
-          
+
           {/* Scene Content */}
-          <StoryScenePlayer 
-            scene={scene} 
+          <StoryScenePlayer
+            scene={scene}
             onComplete={handleSceneComplete}
           />
-          
+
           {/* Voice Challenge */}
           {scene.voiceChallenge && (
             <div className="mt-4">
@@ -1227,7 +1227,7 @@ const GamifiedRomanceLearningPath: React.FC<{ onBack: () => void }> = ({ onBack 
               />
             </div>
           )}
-          
+
           {/* Timed Challenge */}
           {scene.timedChallenge && (
             <div className="mt-4">
@@ -1240,7 +1240,7 @@ const GamifiedRomanceLearningPath: React.FC<{ onBack: () => void }> = ({ onBack 
                     xp: prev.xp + reward.xp
                   }))
                   handleAffectionChange(reward.affection)
-                  
+
                   if (success && score >= 90) {
                     setGameState(prev => ({
                       ...prev,
@@ -1267,7 +1267,7 @@ const GamifiedRomanceLearningPath: React.FC<{ onBack: () => void }> = ({ onBack 
           <ArrowRight className="w-4 h-4 rotate-180" />
           Back to Arcs
         </button>
-        
+
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-2">
@@ -1276,7 +1276,7 @@ const GamifiedRomanceLearningPath: React.FC<{ onBack: () => void }> = ({ onBack 
           <p className="text-sm sm:text-lg text-gray-600 mb-4">
             Talk to AI characters, complete timed challenges, and build real relationships!
           </p>
-          
+
           {/* Game Features Banner */}
           <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg p-4 mb-6">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs sm:text-sm">
@@ -1299,11 +1299,11 @@ const GamifiedRomanceLearningPath: React.FC<{ onBack: () => void }> = ({ onBack 
             </div>
           </div>
         </div>
-        
+
         {/* Stats Grid */}
         <div className="grid lg:grid-cols-3 gap-4 mb-6">
-          <AffectionMeter 
-            currentAffection={userProgress.affection} 
+          <AffectionMeter
+            currentAffection={userProgress.affection}
             recentChange={recentAffectionChange}
           />
           <GameStats gameState={gameState} />
@@ -1328,7 +1328,7 @@ const GamifiedRomanceLearningPath: React.FC<{ onBack: () => void }> = ({ onBack 
             </div>
           </div>
         </div>
-        
+
         {/* Episodes */}
         <div className="space-y-4">
           {episodes.map((episodeItem, index) => (
@@ -1372,25 +1372,25 @@ const GamifiedRomanceLearningPath: React.FC<{ onBack: () => void }> = ({ onBack 
                   {episodeItem.stars > 0 && (
                     <div className="flex justify-center">
                       {[...Array(3)].map((_, i) => (
-                        <Star 
-                          key={i} 
+                        <Star
+                          key={i}
                           className={`w-3 h-3 ${
                             i < episodeItem.stars ? 'text-yellow-500 fill-current' : 'text-gray-300'
-                          }`} 
+                          }`}
                         />
                       ))}
                     </div>
                   )}
                 </div>
               </div>
-              
+
               {/* Scenes Grid */}
               {episodeItem.unlocked && (
                 <div className="grid gap-2">
                   {episodeItem.scenes.map((sceneItem, sceneIndex) => {
                     const isCompleted = userProgress.completedScenes.includes(sceneItem.id)
                     const isUnlocked = sceneIndex === 0 || userProgress.completedScenes.includes(episodeItem.scenes[sceneIndex - 1]?.id)
-                    
+
                     return (
                       <div
                         key={sceneItem.id}
@@ -1410,7 +1410,7 @@ const GamifiedRomanceLearningPath: React.FC<{ onBack: () => void }> = ({ onBack 
                            !isUnlocked ? <Lock size={12} /> :
                            sceneIndex + 1}
                         </div>
-                        
+
                         <div className="flex-1">
                           <h4 className="font-semibold text-sm">{sceneItem.title}</h4>
                           <div className="flex items-center gap-2 text-xs">
@@ -1427,7 +1427,7 @@ const GamifiedRomanceLearningPath: React.FC<{ onBack: () => void }> = ({ onBack 
                             )}
                           </div>
                         </div>
-                        
+
                         <div className="text-right">
                           {isCompleted && (
                             <div className="text-green-600 text-xs font-bold">✓ Done</div>

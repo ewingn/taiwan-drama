@@ -1,7 +1,9 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Mail, MessageCircle, Globe } from 'lucide-react'
+// UPDATED: Imported Youtube icon
+import { Mail, MessageCircle, Globe, Youtube } from 'lucide-react'
+import Link from 'next/link'
 
 interface FormData {
   name: string
@@ -48,6 +50,7 @@ const ContactPage = () => {
           <div className="bg-white rounded-lg shadow-lg p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Send us a Message</h2>
             <div className="space-y-6">
+              {/* Form inputs remain the same */}
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
                   Name
@@ -136,8 +139,21 @@ const ContactPage = () => {
                   <Mail className="text-red-500 w-6 h-6 mr-4 mt-1" />
                   <div>
                     <h4 className="font-semibold text-gray-900">Email</h4>
-                    <p className="text-gray-600">hello@taiwanscript.com</p>
+                    {/* UPDATED: Email address */}
+                    <a href="mailto:youyong189@gmail.com" className="text-gray-600 hover:text-red-600">youyong189@gmail.com</a>
                     <p className="text-sm text-gray-500">We typically respond within 24 hours</p>
+                  </div>
+                </div>
+                
+                {/* NEW: YouTube Channel Link */}
+                <div className="flex items-start">
+                  <Youtube className="text-red-600 w-6 h-6 mr-4 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-gray-900">YouTube</h4>
+                     <Link href="https://www.youtube.com/@YouYong%E8%AF%B4" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-red-600">
+                        /@YouYong说
+                     </Link>
+                    <p className="text-sm text-gray-500">Follow the journey and get updates</p>
                   </div>
                 </div>
                 
@@ -147,15 +163,6 @@ const ContactPage = () => {
                     <h4 className="font-semibold text-gray-900">Discord Community</h4>
                     <p className="text-gray-600">Join our learner community</p>
                     <p className="text-sm text-gray-500">Get help from other learners and our team</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start">
-                  <Globe className="text-green-500 w-6 h-6 mr-4 mt-1" />
-                  <div>
-                    <h4 className="font-semibold text-gray-900">Social Media</h4>
-                    <p className="text-gray-600">Follow us for updates</p>
-                    <p className="text-sm text-gray-500">@TaiwanScript on all platforms</p>
                   </div>
                 </div>
               </div>

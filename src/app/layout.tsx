@@ -1,6 +1,7 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
 import Navigation from '../components/Navigation'
+import Link from 'next/link'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -33,28 +34,37 @@ export default function RootLayout({
               <div>
                 <h4 className="font-semibold mb-4">Learning Arcs</h4>
                 <ul className="space-y-2 text-sm text-gray-400">
-                  <li>TV Drama</li>
-                  <li>Taipei Life</li>
-                  <li>KTV Night</li>
-                  <li>Huandao</li>
+                  <li><Link href="/learn" className="hover:text-white transition-colors">TV Drama</Link></li>
+                  <li><span className="cursor-not-allowed opacity-50">Taipei Life</span></li>
+                  <li><span className="cursor-not-allowed opacity-50">KTV Night</span></li>
+                  <li><span className="cursor-not-allowed opacity-50">Huandao</span></li>
                 </ul>
               </div>
               <div>
                 <h4 className="font-semibold mb-4">Company</h4>
                 <ul className="space-y-2 text-sm text-gray-400">
-                  <li>About Us</li>
-                  <li>Contact</li>
-                  <li>Privacy Policy</li>
-                  <li>Terms of Service</li>
+                  <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
+                  <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
+                  <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                  <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
                 </ul>
               </div>
               <div>
                 <h4 className="font-semibold mb-4">Connect</h4>
                 <ul className="space-y-2 text-sm text-gray-400">
-                  <li>Discord Community</li>
-                  <li>Twitter</li>
-                  <li>Instagram</li>
-                  <li>YouTube</li>
+                  <li><a href="#" className="hover:text-white transition-colors">Discord Community</a></li>
+                  <li><a href="#" className="hover:text-white transition-colors">Twitter</a></li>
+                  <li><a href="#" className="hover:text-white transition-colors">Instagram</a></li>
+                  <li>
+                    <a 
+                      href="https://www.youtube.com/@YouYong%E8%AF%B4" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="hover:text-white transition-colors"
+                    >
+                      YouTube
+                    </a>
+                  </li>
                 </ul>
               </div>
             </div>

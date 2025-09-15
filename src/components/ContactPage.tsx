@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Mail, MessageCircle, Globe } from 'lucide-react'
+import { Mail, MessageCircle, Globe, Youtube } from 'lucide-react'
 
 interface FormData {
   name: string
@@ -19,8 +19,24 @@ const ContactPage = () => {
   })
 
   const handleSubmit = () => {
-    // Handle form submission here
-    alert('Thank you for your message! We\'ll get back to you soon.')
+    // Create mailto link with the form data
+    const subject = encodeURIComponent(`TaiwanScript Contact: ${formData.subject}`)
+    const body = encodeURIComponent(
+      `Name: ${formData.name}\n` +
+      `Email: ${formData.email}\n` +
+      `Subject: ${formData.subject}\n\n` +
+      `Message:\n${formData.message}`
+    )
+    
+    const mailtoLink = `mailto:youyong189@gmail.com?subject=${subject}&body=${body}`
+    
+    // Open the user's default email client
+    window.location.href = mailtoLink
+    
+    // Show success message
+    alert('Opening your email client to send the message to our team!')
+    
+    // Reset form
     setFormData({ name: '', email: '', subject: '', message: '' })
   }
 
@@ -119,7 +135,8 @@ const ContactPage = () => {
               
               <button
                 onClick={handleSubmit}
-                className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                disabled={!formData.name || !formData.email || !formData.subject || !formData.message}
+                className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Send Message
               </button>
@@ -136,7 +153,7 @@ const ContactPage = () => {
                   <Mail className="text-red-500 w-6 h-6 mr-4 mt-1" />
                   <div>
                     <h4 className="font-semibold text-gray-900">Email</h4>
-                    <p className="text-gray-600">hello@taiwanscript.com</p>
+                    <p className="text-gray-600">youyong189@gmail.com</p>
                     <p className="text-sm text-gray-500">We typically respond within 24 hours</p>
                   </div>
                 </div>
@@ -147,6 +164,22 @@ const ContactPage = () => {
                     <h4 className="font-semibold text-gray-900">Discord Community</h4>
                     <p className="text-gray-600">Join our learner community</p>
                     <p className="text-sm text-gray-500">Get help from other learners and our team</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start">
+                  <Youtube className="text-red-500 w-6 h-6 mr-4 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-gray-900">YouTube Channel</h4>
+                    <a 
+                      href="https://www.youtube.com/@YouYong%E8%AF%B4" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-red-600 hover:text-red-700 transition-colors"
+                    >
+                      @YouYong说
+                    </a>
+                    <p className="text-sm text-gray-500">Chinese learning content and updates</p>
                   </div>
                 </div>
                 

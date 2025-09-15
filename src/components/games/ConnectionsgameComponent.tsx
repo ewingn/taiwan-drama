@@ -1,4 +1,4 @@
-// src/components/games/ConnectionsGameComponent.tsx
+// src/components/games/ConnectionsGameComponent.tsx (note the capital G)
 import React, { useState, useEffect } from 'react'
 
 interface ConnectionsGameProps {
@@ -11,7 +11,6 @@ interface ConnectionsGameProps {
         category: string
         items: string[]
         color: string
-        difficulty: number // 1 = easiest (blue), 4 = hardest (red)
         culturalNote?: string
       }>
       timeLimit: number
@@ -28,13 +27,12 @@ interface ConnectionsGameProps {
 const ConnectionsGameComponent: React.FC<ConnectionsGameProps> = ({ game, onComplete }) => {
   const [timeLeft, setTimeLeft] = useState(game.data.timeLimit || 120)
   const [selectedWords, setSelectedWords] = useState<string[]>([])
-  const [foundGroups, setFoundGroups] = useState<Array<{category: string, items: string[], color: string, difficulty: number}>>([])
+  const [foundGroups, setFoundGroups] = useState<Array<{category: string, items: string[], color: string}>>([])
   const [gameStarted, setGameStarted] = useState(false)
   const [gameEnded, setGameEnded] = useState(false)
-  const [mistakes, setMistakes] = useState(0)
-  const [maxMistakes] = useState(4)
-  const [showResult, setShowResult] = useState<'correct' | 'incorrect' | 'oneAway' | null>(null)
-  const [shuffledWords, setShuffledWords] = useState<string[]>([])
+  const [attempts, setAttempts] = useState(0)
+  const [showHint, setShowHint] = useState(false)
+  const [lastAttemptResult, setLastAttemptResult] = useState<'correct' | 'incorrect' | null>(null)
 
   // Safety check for game data
   if (!game || !game.data || !game.data.words || !game.data.groups) {
@@ -48,13 +46,6 @@ const ConnectionsGameComponent: React.FC<ConnectionsGameProps> = ({ game, onComp
       </div>
     )
   }
-
-  // Initialize shuffled words
-  useEffect(() => {
-    if (game.data.words.length === 16) {
-      setShuffledWords([...game.data.words].sort(() => Math.random() - 0.5))
-    }
-  }, [game.data.words])
 
   // Timer effect
   useEffect(() => {
@@ -73,94 +64,67 @@ const ConnectionsGameComponent: React.FC<ConnectionsGameProps> = ({ game, onComp
     }
   }, [foundGroups.length, game.data.groups.length, gameStarted, gameEnded])
 
-  // Clear result after 2 seconds
-  useEffect(() => {
-    if (showResult) {
-      const timer = setTimeout(() => setShowResult(null), 2000)
-      return () => clearTimeout(timer)
-    }
-  }, [showResult])
-
-  const getDifficultyColor = (difficulty: number) => {
-    switch (difficulty) {
-      case 1: return 'bg-yellow-200 border-yellow-400 text-yellow-900' // Easy
-      case 2: return 'bg-green-200 border-green-400 text-green-900'   // Medium-Easy  
-      case 3: return 'bg-blue-200 border-blue-400 text-blue-900'     // Medium-Hard
-      case 4: return 'bg-purple-200 border-purple-400 text-purple-900' // Hard
-      default: return 'bg-gray-200 border-gray-400 text-gray-900'
-    }
-  }
-
   if (!gameStarted) {
     return (
       <div className="bg-white rounded-xl p-6 shadow-lg">
         <h3 className="text-xl font-bold mb-4">{game.title}</h3>
         <p className="text-gray-600 mb-6">{game.description}</p>
         <div className="bg-purple-50 rounded-lg p-4 mb-4">
-          <div className="text-sm font-semibold text-purple-800 mb-2">How to Play Connections:</div>
+          <div className="text-sm font-semibold text-purple-800 mb-2">How to Play:</div>
           <ul className="text-xs text-purple-700 space-y-1">
             <li>• Find groups of 4 words that share something in common</li>
-            <li>• Select exactly 4 words and click Submit</li>
-            <li>• You have {maxMistakes} mistakes before losing</li>
-            <li>• Groups range from easy (yellow) to hard (purple)</li>
+            <li>• Select 4 words and submit your guess</li>
+            <li>• Each group has a hidden cultural connection to Taiwan</li>
             <li>• Perfect score: +{game.affectionImpact.perfect} ❤️</li>
           </ul>
         </div>
-        <div className="grid grid-cols-4 gap-2 mb-4">
-          {game.data.words.slice(0, 16).map((word, index) => (
-            <div key={index} className="p-2 border border-gray-300 rounded text-center text-sm bg-gray-50 font-medium">
-              {word}
-            </div>
-          ))}
+        <div className="bg-gray-100 rounded-lg p-4 mb-4">
+          <div className="text-sm font-semibold text-gray-700 mb-2">Words you'll be grouping:</div>
+          <div className="grid grid-cols-4 gap-2">
+            {game.data.words.map((word, index) => (
+              <div key={index} className="p-2 border border-gray-300 rounded text-center text-sm bg-gray-50 text-gray-600">
+                {word}
+              </div>
+            ))}
+          </div>
+          <div className="text-xs text-gray-500 mt-2 text-center">
+            ↑ Preview only - Click "Start Game" to begin!
+          </div>
         </div>
         <button onClick={() => setGameStarted(true)} className="w-full bg-purple-600 text-white py-3 rounded-lg font-bold hover:bg-purple-700 transition-colors">
-          Start Connections
+          🎮 Start Game
         </button>
       </div>
     )
   }
 
-  if (gameEnded || mistakes >= maxMistakes) {
+  if (gameEnded) {
     const score = (foundGroups.length / game.data.groups.length) * 100
-    const isSuccess = score >= 50 // More lenient for connections
-    const finalScore = Math.max(0, score - (mistakes * 10)) // Penalty for mistakes
-    
+    const isSuccess = score >= 70
     return (
       <div className="bg-white rounded-xl p-6 shadow-lg text-center">
         <h3 className="text-xl font-bold mb-4">Game Complete!</h3>
-        <div className="text-6xl mb-4">{score >= 90 ? '🌟' : score >= 50 ? '👍' : '😅'}</div>
-        <p className="text-gray-600 mb-2">Score: {Math.round(finalScore)}%</p>
-        <p className="text-gray-600 mb-2">Found: {foundGroups.length}/{game.data.groups.length} groups</p>
-        <p className="text-gray-600 mb-4">Mistakes: {mistakes}/{maxMistakes}</p>
+        <div className="text-6xl mb-4">{score >= 90 ? '🌟' : score >= 70 ? '👍' : '😅'}</div>
+        <p className="text-gray-600 mb-2">Score: {Math.round(score)}%</p>
+        <p className="text-gray-600 mb-4">Found: {foundGroups.length}/{game.data.groups.length} groups</p>
         
-        {/* Show all groups */}
-        <div className="space-y-2 mb-4 text-left">
-          {/* Found groups */}
+        {/* Show found groups */}
+        <div className="space-y-2 mb-4">
           {foundGroups.map((group, index) => (
-            <div key={index} className={`p-3 rounded-lg border-2 ${getDifficultyColor(group.difficulty)}`}>
-              <div className="font-bold text-sm text-center">{group.category}</div>
-              <div className="text-xs text-center opacity-80">{group.items.join(' • ')}</div>
+            <div key={index} className={`p-3 rounded-lg ${group.color}`}>
+              <div className="font-semibold text-sm">{group.category}</div>
+              <div className="text-xs">{group.items.join(', ')}</div>
             </div>
           ))}
-          
-          {/* Missed groups */}
-          {game.data.groups
-            .filter(group => !foundGroups.some(found => found.category === group.category))
-            .map((group, index) => (
-              <div key={index} className="p-3 rounded-lg border-2 bg-gray-100 border-gray-300 text-gray-700">
-                <div className="font-bold text-sm text-center">{group.category}</div>
-                <div className="text-xs text-center opacity-80">{group.items.join(' • ')}</div>
-              </div>
-            ))}
         </div>
 
         <div className="bg-gray-50 rounded-lg p-3 mb-4">
           <div className="text-sm font-semibold text-gray-700">Affection Impact:</div>
-          <div className={`text-sm font-bold ${finalScore >= 90 ? 'text-green-600' : finalScore >= 50 ? 'text-blue-600' : 'text-red-600'}`}>
-            {finalScore >= 90 ? `+${game.affectionImpact.perfect}` : finalScore >= 50 ? `+${game.affectionImpact.good}` : `${game.affectionImpact.poor}`} ❤️
+          <div className={`text-sm font-bold ${score >= 90 ? 'text-green-600' : score >= 70 ? 'text-blue-600' : 'text-red-600'}`}>
+            {score >= 90 ? `+${game.affectionImpact.perfect}` : score >= 70 ? `+${game.affectionImpact.good}` : `${game.affectionImpact.poor}`} ❤️
           </div>
         </div>
-        <button onClick={() => onComplete(isSuccess, finalScore)} className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+        <button onClick={() => onComplete(isSuccess, score)} className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
           Continue Story
         </button>
       </div>
@@ -168,200 +132,188 @@ const ConnectionsGameComponent: React.FC<ConnectionsGameProps> = ({ game, onComp
   }
 
   const handleWordSelect = (word: string) => {
-    // Can't select words that are already in found groups
-    if (foundGroups.some(group => group.items.includes(word))) return
+    console.log('handleWordSelect called with:', word) // Debug log
+    console.log('Current selectedWords:', selectedWords) // Debug log
+    console.log('foundGroups:', foundGroups) // Debug log
+    
+    // Check if word is already in a found group
+    if (foundGroups.some(group => group.items.includes(word))) {
+      console.log('Word already in found group, returning') // Debug log
+      return
+    }
 
     if (selectedWords.includes(word)) {
-      setSelectedWords(selectedWords.filter(w => w !== word))
+      // Deselect word
+      console.log('Deselecting word:', word) // Debug log
+      setSelectedWords(prev => prev.filter(w => w !== word))
     } else if (selectedWords.length < 4) {
-      setSelectedWords([...selectedWords, word])
+      // Select word
+      console.log('Selecting word:', word) // Debug log
+      setSelectedWords(prev => [...prev, word])
+    } else {
+      console.log('Already have 4 words selected') // Debug log
     }
   }
 
-  const handleSubmit = () => {
+  const handleSubmitGroup = () => {
     if (selectedWords.length !== 4) return
 
-    // Check if this selection matches any group exactly
+    // Check if this selection matches any group
     const matchingGroup = game.data.groups.find(group => 
-      group.items.length === 4 &&
-      selectedWords.length === 4 &&
-      group.items.every(item => selectedWords.includes(item)) &&
-      selectedWords.every(item => group.items.includes(item))
+      group.items.length === selectedWords.length &&
+      group.items.every(item => selectedWords.includes(item))
     )
 
     if (matchingGroup) {
       // Correct group found!
-      const newFoundGroup = {
+      setFoundGroups([...foundGroups, {
         category: matchingGroup.category,
         items: [...matchingGroup.items],
-        color: matchingGroup.color,
-        difficulty: matchingGroup.difficulty || 1
-      }
-      setFoundGroups([...foundGroups, newFoundGroup])
+        color: matchingGroup.color
+      }])
       setSelectedWords([])
-      setShowResult('correct')
+      setLastAttemptResult('correct')
+      setTimeout(() => setLastAttemptResult(null), 2000)
     } else {
-      // Check if 3 out of 4 are correct (one away)
-      const oneAwayGroup = game.data.groups.find(group =>
-        selectedWords.filter(word => group.items.includes(word)).length === 3
-      )
-      
-      if (oneAwayGroup) {
-        setShowResult('oneAway')
-      } else {
-        setShowResult('incorrect')
-      }
-      
-      setMistakes(prev => prev + 1)
+      // Incorrect guess
+      setAttempts(attempts + 1)
       setSelectedWords([])
-    }
-  }
-
-  const handleShuffle = () => {
-    const remainingWords = shuffledWords.filter(word => 
-      !foundGroups.some(group => group.items.includes(word))
-    )
-    const newShuffled = [...remainingWords].sort(() => Math.random() - 0.5)
-    
-    // Add back the found groups' words in their positions
-    const finalWords = [...shuffledWords]
-    let shuffleIndex = 0
-    
-    for (let i = 0; i < finalWords.length; i++) {
-      if (!foundGroups.some(group => group.items.includes(finalWords[i]))) {
-        finalWords[i] = newShuffled[shuffleIndex]
-        shuffleIndex++
+      setLastAttemptResult('incorrect')
+      setTimeout(() => setLastAttemptResult(null), 2000)
+      
+      // Show hint after 3 failed attempts
+      if (attempts >= 2) {
+        setShowHint(true)
       }
     }
-    
-    setShuffledWords(finalWords)
   }
 
   const getAvailableWords = () => {
-    return shuffledWords.filter(word => 
-      !foundGroups.some(group => group.items.includes(word))
-    )
+    const foundWords = foundGroups.flatMap(group => group.items)
+    return game.data.words.filter(word => !foundWords.includes(word))
   }
 
   const availableWords = getAvailableWords()
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-lg max-w-lg mx-auto">
-      {/* Header */}
+    <div className="bg-white rounded-xl p-6 shadow-lg">
       <div className="text-center mb-4">
         <h3 className="text-xl font-bold">{game.title}</h3>
-        <div className="text-sm text-gray-600 mt-1">
-          Create four groups of four!
+        <div className="flex items-center justify-center gap-4 mt-2">
+          <div className={`text-2xl font-bold ${timeLeft <= 15 ? 'text-red-600' : 'text-purple-600'}`}>
+            {timeLeft}s
+          </div>
+          <div className="text-sm text-gray-600">
+            {foundGroups.length}/{game.data.groups.length} groups
+          </div>
         </div>
       </div>
 
-      {/* Timer and Mistakes */}
-      <div className="flex justify-between items-center mb-4">
-        <div className={`text-sm font-bold ${timeLeft <= 15 ? 'text-red-600' : 'text-purple-600'}`}>
-          ⏱️ {timeLeft}s
-        </div>
-        <div className="text-sm text-gray-600">
-          Mistakes: {mistakes}/{maxMistakes}
-        </div>
+      {/* Progress bar */}
+      <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+        <div
+          className="bg-purple-500 h-2 rounded-full transition-all duration-300"
+          style={{ width: `${(foundGroups.length / game.data.groups.length) * 100}%` }}
+        />
       </div>
 
-      {/* Mistakes indicator */}
-      <div className="flex justify-center gap-1 mb-4">
-        {Array.from({ length: maxMistakes }).map((_, index) => (
-          <div
-            key={index}
-            className={`w-3 h-3 rounded-full ${
-              index < mistakes ? 'bg-red-400' : 'bg-gray-200'
-            }`}
-          />
-        ))}
-      </div>
-
-      {/* Result feedback */}
-      {showResult && (
-        <div className={`text-center p-2 rounded mb-4 ${
-          showResult === 'correct' ? 'bg-green-100 text-green-800' :
-          showResult === 'oneAway' ? 'bg-yellow-100 text-yellow-800' :
-          'bg-red-100 text-red-800'
-        }`}>
-          {showResult === 'correct' && '✓ Correct group!'}
-          {showResult === 'oneAway' && '⚠️ One away...'}
-          {showResult === 'incorrect' && '✗ Not quite right'}
-        </div>
-      )}
-
-      {/* Found groups */}
+      {/* Found groups display */}
       {foundGroups.length > 0 && (
         <div className="mb-4 space-y-2">
           {foundGroups.map((group, index) => (
-            <div key={index} className={`p-3 rounded-lg border-2 ${getDifficultyColor(group.difficulty)}`}>
-              <div className="font-bold text-sm text-center uppercase tracking-wider">{group.category}</div>
-              <div className="text-xs text-center opacity-80 mt-1">{group.items.join(', ')}</div>
+            <div key={index} className={`p-3 rounded-lg ${group.color}`}>
+              <div className="font-semibold text-sm text-center">{group.category}</div>
+              <div className="text-xs text-center opacity-80">{group.items.join(' • ')}</div>
             </div>
           ))}
         </div>
       )}
 
+      {/* Feedback for last attempt */}
+      {lastAttemptResult && (
+        <div className={`text-center p-2 rounded mb-4 ${
+          lastAttemptResult === 'correct' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        }`}>
+          {lastAttemptResult === 'correct' ? '✓ Correct group!' : '✗ Not quite right. Try again!'}
+        </div>
+      )}
+
+      {/* Selected words display */}
+      <div className="mb-4 text-center">
+        <div className="text-sm text-gray-600 mb-2">
+          Selected: {selectedWords.length}/4
+        </div>
+        <div className="flex flex-wrap justify-center gap-1">
+          {selectedWords.map((word, index) => (
+            <span key={index} className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
+              {word}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Debug info (remove in production) */}
+      <div className="bg-gray-100 rounded-lg p-3 mb-4 text-xs">
+        <div><strong>Debug:</strong></div>
+        <div>Available words: {availableWords.length} ({availableWords.join(', ')})</div>
+        <div>Selected words: {selectedWords.length} ({selectedWords.join(', ')})</div>
+        <div>Found groups: {foundGroups.length}</div>
+      </div>
+
       {/* Word grid */}
-      <div className="grid grid-cols-4 gap-2 mb-4">
+      <div className="grid grid-cols-4 gap-3 mb-4">
         {availableWords.map((word: string, index: number) => (
           <button
             key={`${word}-${index}`}
-            onClick={() => handleWordSelect(word)}
-            className={`p-3 border-2 rounded-lg text-sm font-bold transition-all duration-200 ${
+            onClick={() => {
+              console.log('Word clicked:', word) // Debug log
+              handleWordSelect(word)
+            }}
+            className={`p-4 border-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 active:scale-95 ${
               selectedWords.includes(word)
-                ? 'bg-gray-800 text-white border-gray-800 transform scale-95'
-                : 'bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200 hover:border-gray-400'
-            }`}
+                ? 'bg-purple-200 border-purple-500 shadow-lg scale-105 text-purple-800'
+                : 'bg-white border-gray-300 hover:bg-purple-50 hover:border-purple-400 text-gray-700 shadow-sm'
+            } cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50`}
+            type="button"
           >
             {word}
           </button>
         ))}
       </div>
 
-      {/* Controls */}
-      <div className="space-y-3">
-        {/* Selected words display */}
-        {selectedWords.length > 0 && (
-          <div className="text-center">
-            <div className="text-xs text-gray-600 mb-1">Selected ({selectedWords.length}/4):</div>
-            <div className="text-sm font-medium">{selectedWords.join(', ')}</div>
+      {/* Hint system */}
+      {showHint && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+          <div className="text-sm text-yellow-800">
+            <strong>💡 Hint:</strong> Look for words related to {game.data.groups[foundGroups.length]?.category.split(' ')[0]}...
           </div>
-        )}
-
-        {/* Action buttons */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setSelectedWords([])}
-            disabled={selectedWords.length === 0}
-            className="flex-1 py-2 px-4 border border-gray-300 rounded-lg text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-sm font-medium"
-          >
-            Clear
-          </button>
-          
-          <button
-            onClick={handleShuffle}
-            className="flex-1 py-2 px-4 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors text-sm font-medium"
-          >
-            Shuffle
-          </button>
-          
-          <button
-            onClick={handleSubmit}
-            disabled={selectedWords.length !== 4}
-            className="flex-1 py-2 px-4 bg-gray-800 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors text-sm font-bold"
-          >
-            Submit
-          </button>
         </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="flex gap-2">
+        <button
+          onClick={handleSubmitGroup}
+          disabled={selectedWords.length !== 4}
+          className="flex-1 bg-purple-600 text-white py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-700 transition-colors"
+        >
+          Submit Group ({selectedWords.length}/4)
+        </button>
+        <button
+          onClick={() => setSelectedWords([])}
+          disabled={selectedWords.length === 0}
+          className="px-4 py-3 border border-gray-300 rounded-lg text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+        >
+          Clear
+        </button>
       </div>
 
       {/* Skip button */}
       <button
         onClick={() => setGameEnded(true)}
-        className="w-full bg-gray-400 text-white py-2 rounded-lg text-sm mt-3 hover:bg-gray-500 transition-colors"
+        className="w-full bg-gray-400 text-white py-2 rounded-lg text-sm mt-2 hover:bg-gray-500 transition-colors"
       >
-        Give Up
+        Skip Game
       </button>
     </div>
   )

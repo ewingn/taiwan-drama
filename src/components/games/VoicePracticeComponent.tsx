@@ -1,6 +1,6 @@
 // src/components/games/VoicePracticeComponent.tsx
-import React, { useState, useEffect } from 'react'
-import { Mic, MicOff, Send, Target, Award, ArrowRight, Volume2, X, Pause, Play } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { Mic, MicOff, Send, X, Pause, Play, Volume2, ArrowRight } from 'lucide-react'
 
 interface VoicePracticeProps {
   chapter: {
@@ -37,6 +37,8 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
   const [isAIThinking, setIsAIThinking] = useState(false)
   const [conversationEnded, setConversationEnded] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
+  const audioChunks = useRef<Blob[]>([])
 
   // Safety check
   if (!chapter || !chapter.voicePractice) {
@@ -151,6 +153,51 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
 
     simulateAIResponse(inputText)
     setInputText('')
+  }
+  
+  // New microphone handling logic
+  const handleMicrophoneToggle = async () => {
+    if (isRecording) {
+      // Stop recording
+      mediaRecorder?.stop()
+      setIsRecording(false)
+    } else {
+      // Start recording
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        const recorder = new MediaRecorder(stream)
+        
+        recorder.ondataavailable = (event) => {
+          audioChunks.current.push(event.data)
+        }
+        
+        recorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' })
+          audioChunks.current = []
+          
+          // Simulate sending audio to AI backend for transcription
+          console.log('Audio blob ready, simulating AI transcription...')
+          // In a real app, this is where you'd send the blob to a server
+          
+          // Simulate a transcription response
+          const simulatedTranscription = "你好，很高興認識你！"
+          
+          setMessages(prev => [...prev, {
+            type: 'user',
+            content: simulatedTranscription,
+            timestamp: new Date()
+          }])
+          simulateAIResponse(simulatedTranscription)
+        }
+        
+        recorder.start()
+        setMediaRecorder(recorder)
+        setIsRecording(true)
+      } catch (err) {
+        console.error("Microphone access denied or error: ", err)
+        alert("Please enable microphone access to use voice practice.")
+      }
+    }
   }
 
   const calculateFinalScore = () => {
@@ -446,7 +493,7 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
             <div className="flex items-end gap-3">
               {/* Voice Button */}
               <button
-                onClick={() => setIsRecording(!isRecording)}
+                onClick={handleMicrophoneToggle}
                 className={`flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center transition-all ${
                   isRecording 
                     ? 'bg-red-500 shadow-lg shadow-red-200 animate-pulse' 

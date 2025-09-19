@@ -1,5 +1,6 @@
-// src/components/games/ConnectionsGameComponent.tsx (note the capital G)
+// src/components/games/ConnectionsgameComponent.tsx (note the capital G)
 import React, { useState, useEffect } from 'react'
+import { Share2, Copy } from 'lucide-react'
 
 interface ConnectionsGameProps {
   game: {
@@ -33,6 +34,8 @@ const ConnectionsGameComponent: React.FC<ConnectionsGameProps> = ({ game, onComp
   const [attempts, setAttempts] = useState(0)
   const [showHint, setShowHint] = useState(false)
   const [lastAttemptResult, setLastAttemptResult] = useState<'correct' | 'incorrect' | null>(null)
+  const [shareMessage, setShareMessage] = useState('')
+  const [copied, setCopied] = useState(false)
 
   // Safety check for game data
   if (!game || !game.data || !game.data.words || !game.data.groups) {
@@ -57,12 +60,31 @@ const ConnectionsGameComponent: React.FC<ConnectionsGameProps> = ({ game, onComp
     }
   }, [gameStarted, gameEnded, timeLeft])
 
-  // Check if game is complete
+  // Check if game is complete and generate share message
   useEffect(() => {
     if (foundGroups.length === game.data.groups.length && gameStarted && !gameEnded) {
       setTimeout(() => setGameEnded(true), 1000)
     }
-  }, [foundGroups.length, game.data.groups.length, gameStarted, gameEnded])
+    if (gameEnded) {
+      const score = (foundGroups.length / game.data.groups.length) * 100
+      let affectionChange = 0;
+      if (score >= 90) {
+        affectionChange = game.affectionImpact.perfect
+      } else if (score >= 70) {
+        affectionChange = game.affectionImpact.good
+      } else {
+        affectionChange = game.affectionImpact.poor
+      }
+      const message = `I just scored ${Math.round(score)}% on "${game.title}" and found ${foundGroups.length} cultural connections on TaiwanScript! I earned +${affectionChange} ❤️! Try to beat my score! #TaiwanScript #LearnChinese #TaiwaneseCulture`
+      setShareMessage(message)
+    }
+  }, [foundGroups.length, game.data.groups.length, gameStarted, gameEnded, game.title, game.affectionImpact.perfect, game.affectionImpact.good, game.affectionImpact.poor])
+
+  const handleCopyToClipboard = () => {
+    navigator.clipboard.writeText(shareMessage);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   if (!gameStarted) {
     return (
@@ -112,8 +134,8 @@ const ConnectionsGameComponent: React.FC<ConnectionsGameProps> = ({ game, onComp
         <div className="space-y-2 mb-4">
           {foundGroups.map((group, index) => (
             <div key={index} className={`p-3 rounded-lg ${group.color}`}>
-              <div className="font-semibold text-sm">{group.category}</div>
-              <div className="text-xs">{group.items.join(', ')}</div>
+              <div className="font-semibold text-sm text-center">{group.category}</div>
+              <div className="text-xs text-center opacity-80">{group.items.join(' • ')}</div>
             </div>
           ))}
         </div>
@@ -124,34 +146,40 @@ const ConnectionsGameComponent: React.FC<ConnectionsGameProps> = ({ game, onComp
             {score >= 90 ? `+${game.affectionImpact.perfect}` : score >= 70 ? `+${game.affectionImpact.good}` : `${game.affectionImpact.poor}`} ❤️
           </div>
         </div>
-        <button onClick={() => onComplete(isSuccess, score)} className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
-          Continue Story
-        </button>
+
+        <div className="space-y-4">
+          <button onClick={() => onComplete(isSuccess, score)} className="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors">
+            Continue Story
+          </button>
+          
+          <div className="flex justify-center gap-2">
+            <button
+              onClick={handleCopyToClipboard}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                copied ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+              }`}
+            >
+              <Copy size={16} />
+              {copied ? 'Copied!' : 'Share Results'}
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
 
   const handleWordSelect = (word: string) => {
-    console.log('handleWordSelect called with:', word) // Debug log
-    console.log('Current selectedWords:', selectedWords) // Debug log
-    console.log('foundGroups:', foundGroups) // Debug log
-    
     // Check if word is already in a found group
     if (foundGroups.some(group => group.items.includes(word))) {
-      console.log('Word already in found group, returning') // Debug log
       return
     }
 
     if (selectedWords.includes(word)) {
       // Deselect word
-      console.log('Deselecting word:', word) // Debug log
       setSelectedWords(prev => prev.filter(w => w !== word))
     } else if (selectedWords.length < 4) {
       // Select word
-      console.log('Selecting word:', word) // Debug log
       setSelectedWords(prev => [...prev, word])
-    } else {
-      console.log('Already have 4 words selected') // Debug log
     }
   }
 
@@ -252,23 +280,12 @@ const ConnectionsGameComponent: React.FC<ConnectionsGameProps> = ({ game, onComp
         </div>
       </div>
 
-      {/* Debug info (remove in production) */}
-      <div className="bg-gray-100 rounded-lg p-3 mb-4 text-xs">
-        <div><strong>Debug:</strong></div>
-        <div>Available words: {availableWords.length} ({availableWords.join(', ')})</div>
-        <div>Selected words: {selectedWords.length} ({selectedWords.join(', ')})</div>
-        <div>Found groups: {foundGroups.length}</div>
-      </div>
-
       {/* Word grid */}
       <div className="grid grid-cols-4 gap-3 mb-4">
         {availableWords.map((word: string, index: number) => (
           <button
             key={`${word}-${index}`}
-            onClick={() => {
-              console.log('Word clicked:', word) // Debug log
-              handleWordSelect(word)
-            }}
+            onClick={() => handleWordSelect(word)}
             className={`p-4 border-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 active:scale-95 ${
               selectedWords.includes(word)
                 ? 'bg-purple-200 border-purple-500 shadow-lg scale-105 text-purple-800'

@@ -1,5 +1,6 @@
 // src/components/games/MatchingGameComponent.tsx
 import React, { useState, useEffect } from 'react'
+import { Share2, Copy } from 'lucide-react'
 
 interface MatchingGameProps {
   game: {
@@ -28,6 +29,8 @@ const MatchingGameComponent: React.FC<MatchingGameProps> = ({ game, onComplete }
   const [matched, setMatched] = useState<string[]>([])
   const [gameStarted, setGameStarted] = useState(false)
   const [gameEnded, setGameEnded] = useState(false)
+  const [shareMessage, setShareMessage] = useState('')
+  const [copied, setCopied] = useState(false)
 
   // Safety check for game data
   if (!game || !game.data || !game.data.pairs) {
@@ -52,12 +55,32 @@ const MatchingGameComponent: React.FC<MatchingGameProps> = ({ game, onComplete }
     }
   }, [gameStarted, gameEnded, timeLeft])
 
-  // Check if game is complete
+  // Check if game is complete and generate share message
   useEffect(() => {
     if (matched.length === game.data.pairs.length && gameStarted && !gameEnded) {
       setTimeout(() => setGameEnded(true), 1000)
     }
-  }, [matched.length, game.data.pairs.length, gameStarted, gameEnded])
+    if (gameEnded) {
+      const score = (matched.length / game.data.pairs.length) * 100
+      let affectionChange = 0;
+      if (score >= 90) {
+        affectionChange = game.affectionImpact.perfect
+      } else if (score >= 70) {
+        affectionChange = game.affectionImpact.good
+      } else {
+        affectionChange = game.affectionImpact.poor
+      }
+      
+      const message = `I just scored ${Math.round(score)}% on "${game.title}" and earned +${affectionChange} ❤️ on TaiwanScript! Try to beat my score and learn Chinese through drama! #TaiwanScript #LearnChinese #TaiwaneseDrama`
+      setShareMessage(message)
+    }
+  }, [matched.length, game.data.pairs.length, gameStarted, gameEnded, game.title, game.affectionImpact.perfect, game.affectionImpact.good, game.affectionImpact.poor])
+
+  const handleCopyToClipboard = () => {
+    navigator.clipboard.writeText(shareMessage);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   if (!gameStarted) {
     return (
@@ -96,9 +119,24 @@ const MatchingGameComponent: React.FC<MatchingGameProps> = ({ game, onComplete }
             {score >= 90 ? `+${game.affectionImpact.perfect}` : score >= 70 ? `+${game.affectionImpact.good}` : `${game.affectionImpact.poor}`} ❤️
           </div>
         </div>
-        <button onClick={() => onComplete(isSuccess, score)} className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
-          Continue Story
-        </button>
+        
+        <div className="space-y-4">
+          <button onClick={() => onComplete(isSuccess, score)} className="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors">
+            Continue Story
+          </button>
+          
+          <div className="flex justify-center gap-2">
+            <button
+              onClick={handleCopyToClipboard}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                copied ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+              }`}
+            >
+              <Copy size={16} />
+              {copied ? 'Copied!' : 'Share Results'}
+            </button>
+          </div>
+        </div>
       </div>
     )
   }

@@ -1,9 +1,6 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
 import Navigation from '../components/Navigation'
-// NEW: Import Link for footer
-import Link from 'next/link'
-
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -38,32 +35,28 @@ export default function RootLayout({
               <div>
                 <h4 className="font-semibold mb-4">Learning Arcs</h4>
                 <ul className="space-y-2 text-sm text-gray-400">
-                  <li><Link href="/learn" className="hover:text-white">TV Drama</Link></li>
-                  <li className="opacity-50">Taipei Life</li>
-                  <li className="opacity-50">KTV Night</li>
-                  <li className="opacity-50">Huandao</li>
+                  <li>TV Drama</li>
+                  <li>Taipei Life</li>
+                  <li>KTV Night</li>
+                  <li>Huandao</li>
                 </ul>
               </div>
               <div>
                 <h4 className="font-semibold mb-4">Company</h4>
                 <ul className="space-y-2 text-sm text-gray-400">
-                  <li><Link href="/about" className="hover:text-white">About Us</Link></li>
-                  <li><Link href="/contact" className="hover:text-white">Contact</Link></li>
-                  <li><Link href="/privacy-policy" className="hover:text-white">Privacy Policy</Link></li>
-                  <li><Link href="/terms-of-service" className="hover:text-white">Terms of Service</Link></li>
+                  <li>About Us</li>
+                  <li>Contact</li>
+                  <li>Privacy Policy</li>
+                  <li>Terms of Service</li>
                 </ul>
               </div>
               <div>
                 <h4 className="font-semibold mb-4">Connect</h4>
                 <ul className="space-y-2 text-sm text-gray-400">
-                  <li>
-                    <Link href="https://www.youtube.com/@YouYong%E8%AF%B4" target="_blank" rel="noopener noreferrer" className="hover:text-white">
-                      YouTube
-                    </Link>
-                  </li>
-                  <li className="opacity-50">Discord Community</li>
-                  <li className="opacity-50">Twitter</li>
-                  <li className="opacity-50">Instagram</li>
+                  <li>Discord Community</li>
+                  <li>Twitter</li>
+                  <li>Instagram</li>
+                  <li>YouTube</li>
                 </ul>
               </div>
             </div>

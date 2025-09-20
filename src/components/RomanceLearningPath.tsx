@@ -1,1782 +1,1449 @@
+'use client'
+
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowRight, Play, Mic, MicOff, Star, Heart, Gamepad2, BookOpen, Trophy, Lock, Check, Gift, MessageCircle, Volume2, Share, Copy, Users, Globe, Timer, Zap, Target, Award, Clock, Flame, HeartCrack, Volume1, Pause, RotateCcw, FastForward, Info, Camera, MapPin, Sparkles, TrendingUp, Coins, Send, User, Bot, Headphones, Shuffle, Grid3X3, ChevronRight, Home } from 'lucide-react'
+import { ArrowRight, Play, Mic, MicOff, Star, Heart, Gamepad2, BookOpen, Trophy, Lock, Check, Gift, MessageCircle, Volume2, Share, Copy, Users, Globe, Timer, Zap, Target, Award, Clock, Flame, HeartCrack, Volume1, Pause, RotateCcw, FastForward } from 'lucide-react'
 
-// Story Chapter Structure
-interface StoryChapter {
-  id: number
-  title: string
-  subtitle: string
+// Enhanced Types for Gamified System
+interface Character {
+  id: string
+  name: string
+  chineseName: string
+  role: string
+  avatar: string
   description: string
-  storyContext: string
-  setting: string
-  timeOfDay: string
-  mood: string
-  unlocked: boolean
-  completed: boolean
-  
-  // Learning Content
-  keyVocabulary: Array<{
-    chinese: string
-    pinyin: string
-    english: string
-    context: string
-  }>
-  
-  sentencePatterns: Array<{
-    pattern: string
-    explanation: string
-    examples: Array<{
-      chinese: string
-      pinyin: string
-      english: string
-    }>
-  }>
+  personality: string[]
+  voiceSettings: {
+    pitch: number
+    rate: number
+    voice: string
+  }
+}
 
-  // Story Dialogue
-  dialogue: Array<{
-    character: string
-    avatar: string
+interface VoiceInteraction {
+  type: 'greeting' | 'question' | 'response' | 'emotion'
+  trigger: string
+  aiResponse: {
     chinese: string
     pinyin: string
     english: string
     emotion: string
-    internalThought?: string
-  }>
-
-  // Mini Games (2-3 per chapter)
-  miniGames: Array<{
-    id: string
-    type: 'connections' | 'matching' | 'quickfire'
-    title: string
-    description: string
-    data: any
-    affectionImpact: {
-      perfect: number
-      good: number
-      poor: number
-    }
-  }>
-
-  // Voice Practice (chapter finale)
-  voicePractice: {
-    scenario: string
-    objective: string
-    keyPhrases: string[]
-    culturalContext: string[]
-    aiCharacterPrompt: string
-    successCriteria: string[]
-    affectionReward: number
+    voiceSpeed: number
   }
-
-  // Chapter Requirements
-  requiredAffection: number // Minimum to proceed
-  perfectAffection: number // Bonus story elements
+  correctResponses: string[]
+  timeLimit: number
+  affectionReward: number
+  affectionPenalty: number
 }
 
-// Game State
-interface GameProgress {
-  currentChapter: number
-  totalAffection: number
-  chaptersCompleted: number[]
-  gamesCompleted: string[]
-  perfectChapters: number[]
-  storyEnding: 'incomplete' | 'bad' | 'good' | 'perfect' | 'failed'
+interface TimedChallenge {
+  id: string
+  title: string
+  type: 'connections' | 'quickfire' | 'voicematch' | 'speedtranslate'
+  timeLimit: number
+  description: string
+  data: any
+  rewards: {
+    perfect: { xp: number, affection: number }
+    good: { xp: number, affection: number }
+    fail: { xp: number, affection: number }
+  }
 }
 
-// Story Chapters Data
-const storyChapters: StoryChapter[] = [
+interface GameState {
+  currentStreak: number
+  maxStreak: number
+  totalTimeSpent: number
+  perfectGames: number
+  voiceInteractions: number
+  currentCombo: number
+  lastPlayTime: Date
+}
+
+interface StoryScene {
+  id: string
+  title: string
+  setting: string
+  timeOfDay: string
+  weather: string
+  mood: string
+  backgroundMusic?: string
+  characters: string[]
+  dialogue: Array<{
+    character: string
+    chinese: string
+    pinyin: string
+    english: string
+    emotion: string
+    voiceDelay: number
+    choices?: Array<{
+      chinese: string
+      pinyin: string
+      english: string
+      affectionChange: number
+      consequence: string
+    }>
+  }>
+  voiceChallenge?: VoiceInteraction
+  timedChallenge?: TimedChallenge
+}
+
+interface Episode {
+  id: number
+  title: string
+  description: string
+  theme: string
+  culturalFocus: string
+  estimatedTime: string
+  difficulty: 'Easy' | 'Medium' | 'Hard'
+  scenes: StoryScene[]
+  unlocked: boolean
+  completed: boolean
+  stars: number
+  bestTime?: number
+  checkpointReward: {
+    type: 'achievement' | 'item' | 'scene' | 'voice'
+    content: string
+    unlocks?: string[]
+  }
+}
+
+// Enhanced Character Data with Voice Settings
+const characters: Character[] = [
   {
-    id: 1,
-    title: "First Day Destiny",
-    subtitle: "The Transfer Student Arrives",
-    description: "Your first day at Zhongshan High School. Will you make the right first impression?",
-    storyContext: "You're a nervous American-Taiwanese student starting at a traditional Taiwanese high school. Your Chinese is basic, your cultural knowledge limited, but your heart is open to new experiences. Today, you'll meet someone who will change your life forever.",
-    setting: "Zhongshan High School, Classroom 3-A",
-    timeOfDay: "Early Morning (8:00 AM)",
-    mood: "Nervous anticipation, cultural overwhelm",
-    unlocked: true,
-    completed: false,
-    
-    keyVocabulary: [
-      {
-        chinese: "請多指教",
-        pinyin: "qǐng duō zhǐjiào", 
-        english: "Please guide me / Please take care of me",
-        context: "Essential humble greeting when meeting new people in Taiwan"
-      },
-      {
-        chinese: "新同學",
-        pinyin: "xīn tóngxué",
-        english: "new classmate",
-        context: "How you'll be introduced to the class"
-      },
-      {
-        chinese: "很高興認識你",
-        pinyin: "hěn gāoxìng rènshi nǐ",
-        english: "Very happy to meet you",
-        context: "Polite way to respond when introduced"
-      },
-      {
-        chinese: "我來自美國",
-        pinyin: "wǒ láizì Měiguó",
-        english: "I come from America", 
-        context: "How to explain your background"
-      },
-      {
-        chinese: "同桌",
-        pinyin: "tóngzhuō",
-        english: "desk partner",
-        context: "Your seating arrangement partner - very important relationship!"
-      }
-    ],
-
-    sentencePatterns: [
-      {
-        pattern: "我是... (wǒ shì...)",
-        explanation: "I am... - Basic self-introduction pattern",
-        examples: [
-          {
-            chinese: "我是小明",
-            pinyin: "wǒ shì Xiǎo Míng", 
-            english: "I am Xiao Ming"
-          },
-          {
-            chinese: "我是新學生",
-            pinyin: "wǒ shì xīn xuéshēng",
-            english: "I am a new student"
-          }
-        ]
-      },
-      {
-        pattern: "很... (hěn...)",
-        explanation: "Very... - Used to intensify adjectives and show enthusiasm",
-        examples: [
-          {
-            chinese: "很高興",
-            pinyin: "hěn gāoxìng",
-            english: "very happy"
-          },
-          {
-            chinese: "很緊張",
-            pinyin: "hěn jǐnzhāng", 
-            english: "very nervous"
-          }
-        ]
-      }
-    ],
-
-    dialogue: [
-      {
-        character: "老師",
-        avatar: "👩‍🏫",
-        chinese: "同學們，我們今天有一位新同學。小明，請你自我介紹一下。",
-        pinyin: "Tóngxuémen, wǒmen jīntiān yǒu yīwèi xīn tóngxué. Xiǎo Míng, qǐng nǐ zìwǒ jièshào yīxià.",
-        english: "Students, today we have a new classmate. Xiao Ming, please introduce yourself.",
-        emotion: "authoritative but encouraging"
-      },
-      {
-        character: "小明",
-        avatar: "🧑‍🎓", 
-        chinese: "大家好，我是小明。我來自美國。我的中文不太好，請大家多多指教。",
-        pinyin: "Dàjiā hǎo, wǒ shì Xiǎo Míng. Wǒ láizì Měiguó. Wǒ de zhōngwén bùtài hǎo, qǐng dàjiā duōduō zhǐjiào.",
-        english: "Hello everyone, I'm Xiao Ming. I come from America. My Chinese isn't very good, please guide me.",
-        emotion: "nervous but sincere",
-        internalThought: "Did I say that right? Everyone seems friendly..."
-      },
-      {
-        character: "小愛",
-        avatar: "👩‍🎓",
-        chinese: "哇！美國來的！歡迎你！我是小愛，很高興認識你！",
-        pinyin: "Wā! Měiguó lái de! Huānyíng nǐ! Wǒ shì Xiǎo Ài, hěn gāoxìng rènshi nǐ!",
-        english: "Wow! From America! Welcome! I'm Xiao Ai, very happy to meet you!",
-        emotion: "excited and welcoming",
-        internalThought: "He seems so sincere and humble. I want to help him feel welcome here."
-      }
-    ],
-
-    miniGames: [
-      {
-        id: "intro_vocabulary_matching",
-        type: "matching",
-        title: "Introduction Vocabulary Matching",
-        description: "Match the key introduction phrases with their English meanings!",
-        data: {
-          pairs: [
-            { chinese: "請多指教", english: "Please guide me", pinyin: "qǐng duō zhǐjiào" },
-            { chinese: "新同學", english: "new classmate", pinyin: "xīn tóngxué" },
-            { chinese: "很高興認識你", english: "happy to meet you", pinyin: "hěn gāoxìng rènshi nǐ" },
-            { chinese: "我來自美國", english: "I come from America", pinyin: "wǒ láizì Měiguó" },
-            { chinese: "同桌", english: "desk partner", pinyin: "tóngzhuō" },
-            { chinese: "自我介紹", english: "self introduction", pinyin: "zìwǒ jièshào" }
-          ],
-          timeLimit: 90
-        },
-        affectionImpact: {
-          perfect: 15, // 90%+ correct
-          good: 10,   // 70%+ correct  
-          poor: -5    // <70% correct
-        }
-      },
-      {
-        id: "classroom_connections", 
-        type: "connections",
-        title: "Taiwanese Classroom Culture",
-        description: "Group these classroom-related terms to show your cultural understanding!",
-        data: {
-          words: [
-            "老師", "同學", "黑板", "課本",
-            "尊敬", "禮貌", "認真", "努力", 
-            "上課", "下課", "考試", "功課"
-          ],
-          groups: [
-            {
-              category: "People",
-              items: ["老師", "同學", "黑板", "課本"],
-              color: "bg-blue-100 border-blue-300"
-            },
-            {
-              category: "Values", 
-              items: ["尊敬", "禮貌", "認真", "努力"],
-              color: "bg-green-100 border-green-300"
-            },
-            {
-              category: "Activities",
-              items: ["上課", "下課", "考試", "功課"], 
-              color: "bg-purple-100 border-purple-300"
-            }
-          ],
-          timeLimit: 120
-        },
-        affectionImpact: {
-          perfect: 20,
-          good: 12,
-          poor: -8
-        }
-      }
-    ],
-
-    voicePractice: {
-      scenario: "You're having your first conversation with Xiao Ai after class. She wants to help you feel welcome and learn about your background.",
-      objective: "Use introduction vocabulary naturally and show interest in Taiwanese culture",
-      keyPhrases: [
-        "謝謝你的幫助 (Thank you for your help)",
-        "台灣很美 (Taiwan is beautiful)", 
-        "我想學中文 (I want to learn Chinese)",
-        "你可以教我嗎 (Can you teach me?)"
-      ],
-      culturalContext: [
-        "Showing humility about your Chinese level earns respect",
-        "Complimenting Taiwan and its culture is always appreciated", 
-        "Asking for help shows you value the relationship"
-      ],
-      aiCharacterPrompt: `You are 小愛 (Xiao Ai), a warm 17-year-old Taiwanese high school student. The new American transfer student just introduced himself to the class. You're excited to help him and learn about his background.
-
-PERSONALITY: Enthusiastic, helpful, culturally proud, slightly shy but outgoing
-RELATIONSHIP STATUS: First meeting, interested in being friends
-SPEAKING STYLE: Clear Chinese with English translations, encouraging about his learning
-
-You should:
-- Welcome him warmly and offer help
-- Ask about his experience in Taiwan so far
-- Share interesting things about Taiwanese culture
-- Encourage his Chinese learning efforts
-- Be friendly but not too forward (this is your first conversation)
-
-Respond in format:
-Chinese: [Chinese response]
-Pinyin: [pinyin]
-English: [English translation]
-Emotion: [your current feeling]`,
-      successCriteria: [
-        "Use at least 3 key phrases naturally",
-        "Ask questions about Taiwan/culture", 
-        "Show appreciation for Xiao Ai's help",
-        "Maintain conversation for at least 5 exchanges"
-      ],
-      affectionReward: 25
-    },
-
-    requiredAffection: 30,
-    perfectAffection: 50
+    id: 'xiaoming',
+    name: 'Xiao Ming',
+    chineseName: '小明',
+    role: 'Protagonist (You)',
+    avatar: '🧑‍🎓',
+    description: 'A shy but kind-hearted transfer student',
+    personality: ['Introverted', 'Thoughtful', 'Loyal', 'Academic'],
+    voiceSettings: { pitch: 1.0, rate: 0.9, voice: 'male' }
   },
-  
   {
-    id: 2,
-    title: "Secret Messages",
-    subtitle: "The Art of Note Passing",
-    description: "During boring math class, you and Xiao Ai discover the thrill of secret communication.",
-    storyContext: "Three days have passed since your first meeting. You and Xiao Ai have become desk partners and friends. But today, during the most boring math class ever, you're about to learn one of the most important skills in teenage romance: the ancient art of note passing.",
-    setting: "Mathematics Classroom, Zhongshan High School",
-    timeOfDay: "Late Morning (10:30 AM)",
-    mood: "Boredom transforming into mischievous excitement",
-    unlocked: false,
-    completed: false,
-
-    keyVocabulary: [
-      {
-        chinese: "紙條",
-        pinyin: "zhǐtiáo",
-        english: "note (piece of paper)",
-        context: "The secret message you'll pass in class"
-      },
-      {
-        chinese: "無聊",
-        pinyin: "wúliáo", 
-        english: "boring",
-        context: "How you feel about math class"
-      },
-      {
-        chinese: "偷偷",
-        pinyin: "tōutōu",
-        english: "secretly/quietly",
-        context: "How you pass notes without getting caught"
-      },
-      {
-        chinese: "小心",
-        pinyin: "xiǎoxīn",
-        english: "be careful",
-        context: "Warning when the teacher looks your way"
-      },
-      {
-        chinese: "午餐",
-        pinyin: "wǔcān", 
-        english: "lunch",
-        context: "What you want to invite her to share"
-      }
-    ],
-
-    sentencePatterns: [
-      {
-        pattern: "想不想... (xiǎng bù xiǎng...)",
-        explanation: "Do you want to... - Casual way to make invitations",
-        examples: [
-          {
-            chinese: "想不想一起吃午餐？",
-            pinyin: "xiǎng bù xiǎng yīqǐ chī wǔcān?",
-            english: "Do you want to have lunch together?"
-          }
-        ]
-      },
-      {
-        pattern: "好...啊 (hǎo... a)",
-        explanation: "So... - Used to express how something feels",
-        examples: [
-          {
-            chinese: "好無聊啊",
-            pinyin: "hǎo wúliáo a", 
-            english: "So boring"
-          }
-        ]
-      }
-    ],
-
-    dialogue: [
-      {
-        character: "小明",
-        avatar: "🧑‍🎓",
-        chinese: "這數學課真的好無聊...小愛看起來也很累。",
-        pinyin: "Zhè shùxué kè zhēn de hǎo wúliáo... Xiǎo Ài kàn qǐlái yě hěn lèi.",
-        english: "This math class is really boring... Xiao Ai looks tired too.",
-        emotion: "bored and observant",
-        internalThought: "Should I write her a note? What if we get caught? But she looks as bored as I feel..."
-      },
-      {
-        character: "小愛", 
-        avatar: "👩‍🎓",
-        chinese: "老師在黑板上寫什麼？我完全看不懂...",
-        pinyin: "Lǎoshī zài hēibǎn shàng xiě shénme? Wǒ wánquán kàn bù dǒng...",
-        english: "What is the teacher writing on the blackboard? I completely don't understand...",
-        emotion: "confused and sleepy",
-        internalThought: "Math is so hard. I wonder what Xiao Ming is thinking about..."
-      }
-    ],
-
-    miniGames: [
-      {
-        id: "note_writing_quickfire",
-        type: "quickfire", 
-        title: "Speed Note Writing",
-        description: "Quickly match Chinese note-passing phrases with their secret meanings!",
-        data: {
-          pairs: [
-            { chinese: "好無聊", english: "So boring" },
-            { chinese: "想不想", english: "Do you want to" },
-            { chinese: "一起吃飯", english: "eat together" },
-            { chinese: "老師來了", english: "teacher's coming" },
-            { chinese: "小心點", english: "be careful" },
-            { chinese: "下課見", english: "see you after class" },
-            { chinese: "偷偷傳", english: "pass secretly" },
-            { chinese: "別被發現", english: "don't get caught" }
-          ],
-          timeLimit: 60
-        },
-        affectionImpact: {
-          perfect: 18,
-          good: 12, 
-          poor: -6
-        }
-      },
-      {
-        id: "classroom_rebellion_connections",
-        type: "connections",
-        title: "Classroom Rebellion Connections", 
-        description: "Group these note-passing related terms by their secret categories!",
-        data: {
-          words: [
-            "紙條", "偷偷", "小心", "秘密",
-            "無聊", "數學", "課本", "老師",
-            "約會", "午餐", "喜歡", "一起"
-          ],
-          groups: [
-            {
-              category: "Secret Actions",
-              items: ["紙條", "偷偷", "小心", "秘密"],
-              color: "bg-red-100 border-red-300"
-            },
-            {
-              category: "Boring Class",
-              items: ["無聊", "數學", "課本", "老師"], 
-              color: "bg-gray-100 border-gray-300"
-            },
-            {
-              category: "Romance Hints",
-              items: ["約會", "午餐", "喜歡", "一起"],
-              color: "bg-pink-100 border-pink-300"
-            }
-          ],
-          timeLimit: 90
-        },
-        affectionImpact: {
-          perfect: 22,
-          good: 15,
-          poor: -10
-        }
-      }
-    ],
-
-    voicePractice: {
-      scenario: "After successfully passing notes all class, you and Xiao Ai meet after school. She's impressed by your boldness and wants to know more about you.",
-      objective: "Invite her to lunch and express your feelings about your growing friendship",
-      keyPhrases: [
-        "今天很刺激 (Today was exciting)",
-        "想不想一起吃午餐 (Want to have lunch together)",
-        "你很有趣 (You're very interesting)", 
-        "我很喜歡和你聊天 (I really like chatting with you)"
-      ],
-      culturalContext: [
-        "Taking small risks together builds intimacy in Taiwanese culture",
-        "Lunch invitations are often the first step toward dating",
-        "Expressing enjoyment of someone's company is important"
-      ],
-      aiCharacterPrompt: `You are 小愛 (Xiao Ai), now 4 days into knowing the transfer student. Today you passed notes during math class - a thrilling shared rebellion! You're impressed by his boldness and feel closer to him.
-
-PERSONALITY: More comfortable now, slightly flirty, impressed by his courage
-RELATIONSHIP STATUS: Growing friendship with hints of romance
-SPEAKING STYLE: More relaxed, some playful teasing about the note-passing
-
-You should:
-- Express excitement about the note-passing adventure  
-- Tease him playfully about being brave
-- Be open to lunch invitation (this is a big step!)
-- Share more personal thoughts and feelings
-- Ask about his life in America vs Taiwan
-
-Respond in format:
-Chinese: [Chinese response]
-Pinyin: [pinyin] 
-English: [English translation]
-Emotion: [your current feeling]`,
-      successCriteria: [
-        "Successfully invite her to lunch",
-        "Use note-passing vocabulary naturally",
-        "Express enjoyment of shared experience",
-        "Show growing comfort with each other"
-      ],
-      affectionReward: 30
-    },
-
-    requiredAffection: 60,
-    perfectAffection: 85
+    id: 'xiaoai',
+    name: 'Xiao Ai',
+    chineseName: '小愛',
+    role: 'Love Interest',
+    avatar: '👩‍🎓',
+    description: 'Popular and cheerful classmate',
+    personality: ['Outgoing', 'Kind', 'Artistic', 'Popular'],
+    voiceSettings: { pitch: 1.2, rate: 1.0, voice: 'female' }
   },
-
   {
-    id: 3,
-    title: "Night Market Adventure", 
-    subtitle: "First Date Under the Lanterns",
-    description: "Your first real date takes you through the magical world of Taiwan's night markets.",
-    storyContext: "A week has passed since the note-passing incident. Xiao Ai agreed to have lunch with you, and it went so well that she suggested showing you 'real Taiwan culture' at Shilin Night Market. Tonight is your first official date, and the stakes feel enormous.",
-    setting: "Shilin Night Market, Taipei",
-    timeOfDay: "Evening (7:00 PM)",
-    mood: "Romantic excitement mixed with cultural adventure",
-    unlocked: false,
-    completed: false,
-
-    keyVocabulary: [
-      {
-        chinese: "夜市",
-        pinyin: "yèshì",
-        english: "night market", 
-        context: "Taiwan's most iconic cultural experience"
-      },
-      {
-        chinese: "小吃",
-        pinyin: "xiǎochī",
-        english: "snacks/street food",
-        context: "The delicious food you'll share together"
-      },
-      {
-        chinese: "好吃",
-        pinyin: "hǎochī", 
-        english: "delicious",
-        context: "Essential food appreciation"
-      },
-      {
-        chinese: "多少錢",
-        pinyin: "duōshǎo qián",
-        english: "how much money",
-        context: "Asking prices like a local"
-      },
-      {
-        chinese: "老闆",
-        pinyin: "lǎobǎn",
-        english: "boss (vendor)",
-        context: "Respectful way to address food vendors"
-      }
-    ],
-
-    sentencePatterns: [
-      {
-        pattern: "這個... (zhège...)",
-        explanation: "This... - Used to point out specific items",
-        examples: [
-          {
-            chinese: "這個多少錢？",
-            pinyin: "zhège duōshǎo qián?",
-            english: "How much is this?"
-          }
-        ]
-      },
-      {
-        pattern: "我們... (wǒmen...)", 
-        explanation: "We... - Creates intimacy by including both people",
-        examples: [
-          {
-            chinese: "我們一起吃",
-            pinyin: "wǒmen yīqǐ chī",
-            english: "Let's eat together"
-          }
-        ]
-      }
-    ],
-
-    dialogue: [
-      {
-        character: "小愛",
-        avatar: "👩‍🎓",
-        chinese: "歡迎來到士林夜市！這裡是台灣文化的心臟。你想吃什麼？",
-        pinyin: "Huānyíng lái dào Shìlín yèshì! Zhèlǐ shì Táiwān wénhuà de xīnzàng. Nǐ xiǎng chī shénme?",
-        english: "Welcome to Shilin Night Market! This is the heart of Taiwan culture. What do you want to eat?",
-        emotion: "excited and proud",
-        internalThought: "I love showing him my culture. He seems genuinely interested, not just being polite."
-      },
-      {
-        character: "小明",
-        avatar: "🧑‍🎓", 
-        chinese: "哇！這裡好熱鬧！什麼都想嘗試！",
-        pinyin: "Wā! Zhèlǐ hǎo rènao! Shénme dōu xiǎng chángshì!",
-        english: "Wow! It's so lively here! I want to try everything!",
-        emotion: "amazed and enthusiastic",
-        internalThought: "This is incredible! And I'm here with the most beautiful girl in school..."
-      }
-    ],
-
-    miniGames: [
-      {
-        id: "food_ordering_matching",
-        type: "matching",
-        title: "Night Market Food Ordering",
-        description: "Master the essential phrases for ordering food like a local!",
-        data: {
-          pairs: [
-            { chinese: "這個多少錢？", english: "How much is this?", pinyin: "zhège duōshǎo qián?" },
-            { chinese: "請給我兩份", english: "Please give me two portions", pinyin: "qǐng gěi wǒ liǎng fèn" },
-            { chinese: "不要太辣", english: "Not too spicy", pinyin: "bùyào tài là" },
-            { chinese: "謝謝老闆", english: "Thank you boss", pinyin: "xièxie lǎobǎn" },
-            { chinese: "這個好香", english: "This smells good", pinyin: "zhège hǎo xiāng" },
-            { chinese: "我們要這個", english: "We want this", pinyin: "wǒmen yào zhège" }
-          ],
-          timeLimit: 75
-        },
-        affectionImpact: {
-          perfect: 20,
-          good: 14,
-          poor: -8
-        }
-      },
-      {
-        id: "night_market_connections",
-        type: "connections", 
-        title: "Night Market Experience",
-        description: "Group these night market elements to show you understand Taiwan culture!",
-        data: {
-          words: [
-            "珍珠奶茶", "臭豆腐", "小籠包", "牛肉麵",
-            "熱鬧", "好吃", "便宜", "新鮮",
-            "老闆", "攤販", "客人", "排隊"
-          ],
-          groups: [
-            {
-              category: "Famous Foods",
-              items: ["珍珠奶茶", "臭豆腐", "小籠包", "牛肉麵"],
-              color: "bg-orange-100 border-orange-300"
-            },
-            {
-              category: "Food Qualities", 
-              items: ["熱鬧", "好吃", "便宜", "新鮮"],
-              color: "bg-green-100 border-green-300"
-            },
-            {
-              category: "Market People",
-              items: ["老闆", "攤販", "客人", "排隊"],
-              color: "bg-blue-100 border-blue-300"
-            }
-          ],
-          timeLimit: 100
-        },
-        affectionImpact: {
-          perfect: 25,
-          good: 18,
-          poor: -12
-        }
-      }
-    ],
-
-    voicePractice: {
-      scenario: "After eating amazing food together, you and Xiao Ai are walking through the market. The romantic atmosphere and shared cultural experience has brought you much closer.",
-      objective: "Express how much you're enjoying the date and hint at deeper feelings",
-      keyPhrases: [
-        "今晚很特別 (Tonight is special)",
-        "謝謝你帶我來 (Thank you for bringing me here)",
-        "台灣真的很棒 (Taiwan is really amazing)", 
-        "和你在一起很開心 (I'm happy being with you)"
-      ],
-      culturalContext: [
-        "Sharing food creates intimacy in Chinese culture",
-        "Appreciating Taiwan culture shows you respect her heritage", 
-        "Evening markets are romantic settings for couples"
-      ],
-      aiCharacterPrompt: `You are 小愛 (Xiao Ai), on your first real date with the transfer student at Shilin Night Market. You've eaten delicious food together and are walking under the lanterns. You're feeling very close to him now.
-
-PERSONALITY: Romantic, happy, culturally proud, growing feelings
-RELATIONSHIP STATUS: First date going very well, romantic tension building
-SPEAKING STYLE: More intimate, sharing personal thoughts, some shy moments
-
-You should:
-- Express happiness about sharing your culture with him
-- Notice how well he's adapting to Taiwan life  
-- Share some personal dreams and thoughts
-- Be more open about your growing feelings
-- Create romantic moments under the market lights
-
-Respond in format:
-Chinese: [Chinese response]
-Pinyin: [pinyin]
-English: [English translation] 
-Emotion: [your current feeling]`,
-      successCriteria: [
-        "Express genuine appreciation for the date",
-        "Use food and culture vocabulary naturally",
-        "Show growing romantic feelings",
-        "Create intimate conversational moments"
-      ],
-      affectionReward: 35
-    },
-
-    requiredAffection: 90,
-    perfectAffection: 120
+    id: 'teacher',
+    name: 'Teacher Wang',
+    chineseName: '王老師',
+    role: 'Homeroom Teacher',
+    avatar: '👩‍🏫',
+    description: 'Strict but caring homeroom teacher',
+    personality: ['Authoritative', 'Fair', 'Observant'],
+    voiceSettings: { pitch: 0.9, rate: 0.8, voice: 'female' }
   },
-
   {
-    id: 4,
-    title: "Sports Festival Showdown",
-    subtitle: "Competing for Her Heart", 
-    description: "The annual sports festival arrives, and you must prove yourself against your romantic rival.",
-    storyContext: "Two weeks have passed since your magical night market date. Your relationship with Xiao Ai has blossomed, but now Da Wei, the class president who's had a crush on her for years, has challenged you to compete in the sports festival. The whole school will be watching.",
-    setting: "Zhongshan High School Sports Field",
-    timeOfDay: "Morning (9:00 AM)",
-    mood: "Competitive tension with romantic stakes",
-    unlocked: false,
-    completed: false,
-
-    keyVocabulary: [
-      {
-        chinese: "運動會",
-        pinyin: "yùndònghuì", 
-        english: "sports festival",
-        context: "Taiwan's biggest school event of the year"
-      },
-      {
-        chinese: "加油",
-        pinyin: "jiāyóu",
-        english: "come on!/cheer up!",
-        context: "Essential cheering phrase"
-      },
-      {
-        chinese: "比賽",
-        pinyin: "bǐsài",
-        english: "competition/match",
-        context: "What you're participating in"
-      },
-      {
-        chinese: "努力",
-        pinyin: "nǔlì",
-        english: "work hard/effort",
-        context: "What you need to do to win"
-      },
-      {
-        chinese: "勝利",
-        pinyin: "shènglì",
-        english: "victory",
-        context: "What you're fighting for"
-      }
-    ],
-
-    sentencePatterns: [
-      {
-        pattern: "我要... (wǒ yào...)",
-        explanation: "I want to/will... - Expressing determination",
-        examples: [
-          {
-            chinese: "我要努力！",
-            pinyin: "wǒ yào nǔlì!",
-            english: "I will work hard!"
-          }
-        ]
-      },
-      {
-        pattern: "為了... (wèile...)",
-        explanation: "For the sake of... - Showing motivation",
-        examples: [
-          {
-            chinese: "為了小愛",
-            pinyin: "wèile Xiǎo Ài", 
-            english: "For Xiao Ai"
-          }
-        ]
-      }
-    ],
-
-    dialogue: [
-      {
-        character: "大偉",
-        avatar: "🧑‍💼",
-        chinese: "小明，今天我會證明誰才是最適合小愛的人！",
-        pinyin: "Xiǎo Míng, jīntiān wǒ huì zhèngmíng shéi cái shì zuì shìhé Xiǎo Ài de rén!",
-        english: "Xiao Ming, today I'll prove who is the most suitable person for Xiao Ai!",
-        emotion: "determined and competitive",
-        internalThought: "I've liked her for three years. I won't lose to some foreign transfer student."
-      },
-      {
-        character: "小愛",
-        avatar: "👩‍🎓",
-        chinese: "小明！我會為你加油的！你一定可以的！",
-        pinyin: "Xiǎo Míng! Wǒ huì wèi nǐ jiāyóu de! Nǐ yīdìng kěyǐ de!",
-        english: "Xiao Ming! I'll cheer for you! You can definitely do it!",
-        emotion: "supportive and encouraging",
-        internalThought: "I believe in him. He has heart and determination, not just pride."
-      }
-    ],
-
-    miniGames: [
-      {
-        id: "sports_vocabulary_quickfire",
-        type: "quickfire",
-        title: "Sports Festival Quickfire",
-        description: "Rapidly match sports and competition vocabulary!",
-        data: {
-          pairs: [
-            { chinese: "運動會", english: "sports festival" },
-            { chinese: "加油", english: "come on" },
-            { chinese: "比賽", english: "competition" },
-            { chinese: "跑步", english: "running" },
-            { chinese: "勝利", english: "victory" },
-            { chinese: "努力", english: "work hard" },
-            { chinese: "團隊", english: "team" },
-            { chinese: "第一名", english: "first place" }
-          ],
-          timeLimit: 45
-        },
-        affectionImpact: {
-          perfect: 22,
-          good: 16,
-          poor: -10
-        }
-      },
-      {
-        id: "competition_spirit_connections",
-        type: "connections",
-        title: "Competition Spirit",
-        description: "Show you understand the values of Taiwanese sports competition!",
-        data: {
-          words: [
-            "努力", "堅持", "團隊", "合作",
-            "勝利", "第一", "冠軍", "成功", 
-            "友誼", "尊重", "公平", "精神"
-          ],
-          groups: [
-            {
-              category: "Effort Values",
-              items: ["努力", "堅持", "團隊", "合作"],
-              color: "bg-blue-100 border-blue-300"
-            },
-            {
-              category: "Winning",
-              items: ["勝利", "第一", "冠軍", "成功"],
-              color: "bg-yellow-100 border-yellow-300"
-            },
-            {
-              category: "Sportsmanship",
-              items: ["友誼", "尊重", "公平", "精神"],
-              color: "bg-green-100 border-green-300"
-            }
-          ],
-          timeLimit: 110
-        },
-        affectionImpact: {
-          perfect: 28,
-          good: 20,
-          poor: -15
-        }
-      }
-    ],
-
-    voicePractice: {
-      scenario: "After an intense competition where you showed great determination (win or lose), Xiao Ai meets you after the event. This is a crucial moment for your relationship.",
-      objective: "Show maturity, sportsmanship, and express your deeper feelings",
-      keyPhrases: [
-        "我盡力了 (I did my best)",
-        "這不只是比賽 (This isn't just about competition)",
-        "我真的很喜歡你 (I really like you)",
-        "你的支持最重要 (Your support is most important)"
-      ],
-      culturalContext: [
-        "Showing good sportsmanship is highly valued in Taiwan",
-        "This is an appropriate time for deeper emotional expression",
-        "Character matters more than winning in Taiwanese culture"
-      ],
-      aiCharacterPrompt: `You are 小愛 (Xiao Ai), after the sports festival competition between your transfer student friend and Da Wei. Regardless of who won, you're impressed by Xiao Ming's effort and heart. This feels like a pivotal moment in your relationship.
-
-PERSONALITY: Moved by his determination, ready for deeper conversation
-RELATIONSHIP STATUS: Strong feelings developing, major decision point
-SPEAKING STYLE: More emotional, personal, ready to talk about feelings
-
-You should:
-- Express admiration for his character and effort
-- Address the competition situation with maturity
-- Be open about your growing feelings
-- Create a moment for him to express deeper emotions
-- Show that you care about him as a person, not just achievement
-
-Respond in format:
-Chinese: [Chinese response]
-Pinyin: [pinyin]
-English: [English translation]
-Emotion: [your current feeling]`,
-      successCriteria: [
-        "Show good sportsmanship regardless of outcome",
-        "Express genuine feelings beyond competition",
-        "Use sports and emotion vocabulary naturally",
-        "Create a deeper emotional connection"
-      ],
-      affectionReward: 40
-    },
-
-    requiredAffection: 120,
-    perfectAffection: 160
-  },
-
-  {
-    id: 5,
-    title: "Confession Under Cherry Blossoms",
-    subtitle: "The Moment of Truth",
-    description: "With graduation approaching, it's time to confess your true feelings.",
-    storyContext: "Spring has arrived, and the cherry blossoms are blooming around school. You've been in Taiwan for three months now, and your Chinese has improved dramatically. More importantly, your feelings for Xiao Ai have grown into something deep and real. But graduation is coming, and you know this might be your last chance to tell her how you really feel.",
-    setting: "School Cherry Blossom Garden",
-    timeOfDay: "Late Afternoon (5:30 PM)", 
-    mood: "Romantic tension and emotional vulnerability",
-    unlocked: false,
-    completed: false,
-
-    keyVocabulary: [
-      {
-        chinese: "告白",
-        pinyin: "gàobái",
-        english: "confession of love",
-        context: "The moment you've been building toward"
-      },
-      {
-        chinese: "喜歡",
-        pinyin: "xǐhuān", 
-        english: "to like/love",
-        context: "Essential for expressing feelings"
-      },
-      {
-        chinese: "心情",
-        pinyin: "xīnqíng",
-        english: "mood/feelings",
-        context: "Talking about emotional states"
-      },
-      {
-        chinese: "永遠",
-        pinyin: "yǒngyuǎn",
-        english: "forever",
-        context: "For expressing lasting commitment"
-      },
-      {
-        chinese: "勇氣",
-        pinyin: "yǒngqì",
-        english: "courage",
-        context: "What you need for confession"
-      }
-    ],
-
-    sentencePatterns: [
-      {
-        pattern: "我想告訴你... (wǒ xiǎng gàosu nǐ...)",
-        explanation: "I want to tell you... - For important revelations",
-        examples: [
-          {
-            chinese: "我想告訴你我的心情",
-            pinyin: "wǒ xiǎng gàosu nǐ wǒ de xīnqíng",
-            english: "I want to tell you my feelings"
-          }
-        ]
-      },
-      {
-        pattern: "從...開始 (cóng... kāishǐ)",
-        explanation: "Since... started - Talking about when feelings began",
-        examples: [
-          {
-            chinese: "從第一天開始",
-            pinyin: "cóng dì yī tiān kāishǐ",
-            english: "Since the first day"
-          }
-        ]
-      }
-    ],
-
-    dialogue: [
-      {
-        character: "小明",
-        avatar: "🧑‍🎓",
-        chinese: "小愛，我有很重要的事情想告訴你...",
-        pinyin: "Xiǎo Ài, wǒ yǒu hěn zhòngyào de shìqing xiǎng gàosu nǐ...",
-        english: "Xiao Ai, I have something very important I want to tell you...",
-        emotion: "nervous but determined",
-        internalThought: "This is it. Everything I've been feeling, all the moments we've shared... it all comes down to this."
-      },
-      {
-        character: "小愛",
-        avatar: "👩‍🎓",
-        chinese: "什麼事？你看起來很緊張...",
-        pinyin: "Shénme shì? Nǐ kàn qǐlái hěn jǐnzhāng...",
-        english: "What is it? You look very nervous...",
-        emotion: "curious and gentle",
-        internalThought: "I think I know what he wants to say... and I think I know how I feel too."
-      }
-    ],
-
-    miniGames: [
-      {
-        id: "love_confession_matching",
-        type: "matching",
-        title: "Love Confession Vocabulary",
-        description: "Master the language of the heart for your confession!",
-        data: {
-          pairs: [
-            { chinese: "我喜歡你", english: "I like you", pinyin: "wǒ xǐhuān nǐ" },
-            { chinese: "告白", english: "confession", pinyin: "gàobái" },
-            { chinese: "心情", english: "feelings", pinyin: "xīnqíng" },
-            { chinese: "永遠", english: "forever", pinyin: "yǒngyuǎn" },
-            { chinese: "勇氣", english: "courage", pinyin: "yǒngqì" },
-            { chinese: "真心", english: "sincere heart", pinyin: "zhēnxīn" }
-          ],
-          timeLimit: 70
-        },
-        affectionImpact: {
-          perfect: 25,
-          good: 18,
-          poor: -12
-        }
-      },
-      {
-        id: "relationship_journey_connections",
-        type: "connections",
-        title: "Your Love Story Journey",
-        description: "Reflect on your entire relationship journey through vocabulary!",
-        data: {
-          words: [
-            "第一天", "介紹", "同桌", "認識",
-            "紙條", "秘密", "午餐", "約會",
-            "夜市", "文化", "美食", "浪漫",
-            "比賽", "支持", "努力", "勝利"
-          ],
-          groups: [
-            {
-              category: "First Meeting",
-              items: ["第一天", "介紹", "同桌", "認識"],
-              color: "bg-blue-100 border-blue-300"
-            },
-            {
-              category: "Growing Closer", 
-              items: ["紙條", "秘密", "午餐", "約會"],
-              color: "bg-pink-100 border-pink-300"
-            },
-            {
-              category: "Cultural Sharing",
-              items: ["夜市", "文化", "美食", "浪漫"],
-              color: "bg-green-100 border-green-300"
-            },
-            {
-              category: "Proving Yourself",
-              items: ["比賽", "支持", "努力", "勝利"],
-              color: "bg-yellow-100 border-yellow-300"
-            }
-          ],
-          timeLimit: 130
-        },
-        affectionImpact: {
-          perfect: 30,
-          good: 22,
-          poor: -18
-        }
-      }
-    ],
-
-    voicePractice: {
-      scenario: "This is the moment you've been building toward. Under the cherry blossoms, with everything you've learned and experienced together, you must confess your true feelings to Xiao Ai.",
-      objective: "Express your deepest feelings and hopes for the future together",
-      keyPhrases: [
-        "我真的很喜歡你 (I really like you)",
-        "從第一天開始 (Since the first day)",  
-        "你改變了我的生活 (You changed my life)",
-        "我想和你在一起 (I want to be with you)"
-      ],
-      culturalContext: [
-        "Cherry blossom season is the most romantic time in Taiwan",
-        "Honest confession of feelings is highly valued", 
-        "This moment will determine your entire relationship future"
-      ],
-      aiCharacterPrompt: `You are 小愛 (Xiao Ai), at the climactic moment of your love story. The transfer student who has won your heart over these months is about to confess his feelings. You know what's coming, and you know how you feel too.
-
-PERSONALITY: Emotional, ready for this moment, deeply moved by the journey
-RELATIONSHIP STATUS: In love, ready to commit or express mutual feelings
-SPEAKING STYLE: Heartfelt, emotional, romantic, honest about feelings
-
-This is the most important conversation you'll have. You should:
-- Let him express his feelings fully
-- Share your own emotional journey
-- Be honest about how he's changed your life
-- Express your feelings clearly
-- Create a satisfying romantic conclusion
-
-Respond in format:
-Chinese: [Chinese response]
-Pinyin: [pinyin]
-English: [English translation]
-Emotion: [your current feeling]`,
-      successCriteria: [
-        "Express genuine love and commitment",
-        "Reference your shared journey together",
-        "Use romantic vocabulary naturally",
-        "Create emotional climax of the story"
-      ],
-      affectionReward: 50
-    },
-
-    requiredAffection: 150,
-    perfectAffection: 200
+    id: 'rival',
+    name: 'Da Wei',
+    chineseName: '大偉',
+    role: 'Romantic Rival',
+    avatar: '🧑‍💼',
+    description: 'Confident class president',
+    personality: ['Confident', 'Competitive', 'Charismatic'],
+    voiceSettings: { pitch: 0.8, rate: 1.1, voice: 'male' }
   }
 ]
 
-// Story Ending Thresholds
-const STORY_ENDINGS = {
-  PERFECT: 200,  // Perfect romantic ending
-  GOOD: 150,     // Happy romantic ending  
-  OKAY: 100,     // Friendship ending
-  BAD: 50,       // Polite but distant ending
-  FAILED: 0      // Story failure
+// Expanded Story Episodes with Gamified Elements
+const episodes: Episode[] = [
+  {
+    id: 1,
+    title: 'First Day Destiny',
+    description: 'A transfer student meets their soulmate',
+    theme: 'Introductions & Destiny',
+    culturalFocus: 'Taiwanese school culture and politeness',
+    estimatedTime: '15-20 min',
+    difficulty: 'Easy',
+    unlocked: true,
+    completed: false,
+    stars: 0,
+    scenes: [
+      {
+        id: 'morning_arrival',
+        title: 'Nervous Morning',
+        setting: 'School Gates',
+        timeOfDay: 'Early Morning',
+        weather: 'Sunny with light breeze',
+        mood: 'Nervous anticipation',
+        characters: ['xiaoming'],
+        dialogue: [
+          {
+            character: '小明',
+            chinese: '新學校...希望一切都會順利',
+            pinyin: 'Xīn xuéxiào... xīwàng yīqiè dōu huì shùnlì',
+            english: 'New school... I hope everything goes smoothly',
+            emotion: 'nervous',
+            voiceDelay: 0
+          }
+        ],
+        voiceChallenge: {
+          type: 'greeting',
+          trigger: 'First impression prep',
+          aiResponse: {
+            chinese: '新同學！歡迎來到我們學校！',
+            pinyin: 'Xīn tóngxué! Huānyíng lái dào wǒmen xuéxiào!',
+            english: 'New student! Welcome to our school!',
+            emotion: 'welcoming',
+            voiceSpeed: 1.0
+          },
+          correctResponses: ['謝謝', '你好', '很高興認識你'],
+          timeLimit: 5,
+          affectionReward: 10,
+          affectionPenalty: -5
+        }
+      },
+      {
+        id: 'classroom_entrance',
+        title: 'Fateful Meeting',
+        setting: 'Classroom 3-A',
+        timeOfDay: 'Morning',
+        weather: 'Sunny',
+        mood: 'Heart-stopping moment',
+        characters: ['xiaoming', 'xiaoai', 'teacher'],
+        dialogue: [
+          {
+            character: '王老師',
+            chinese: '同學們，我們有新同學。小明，請自我介紹。',
+            pinyin: 'Tóngxuémen, wǒmen yǒu xīn tóngxué. Xiǎo Míng, qǐng zìwǒ jièshào.',
+            english: 'Students, we have a new classmate. Xiao Ming, please introduce yourself.',
+            emotion: 'authoritative',
+            voiceDelay: 1000
+          },
+          {
+            character: '小明',
+            chinese: '大家好，我是小明。請多指教。',
+            pinyin: 'Dàjiā hǎo, wǒ shì Xiǎo Míng. Qǐng duō zhǐjiào.',
+            english: 'Hello everyone, I\'m Xiao Ming. Please take care of me.',
+            emotion: 'nervous',
+            voiceDelay: 2000
+          },
+          {
+            character: '小愛',
+            chinese: '你好！我是小愛。歡迎！',
+            pinyin: 'Nǐ hǎo! Wǒ shì Xiǎo Ài. Huānyíng!',
+            english: 'Hello! I\'m Xiao Ai. Welcome!',
+            emotion: 'cheerful',
+            voiceDelay: 3000,
+            choices: [
+              {
+                chinese: '謝謝！很高興認識你！',
+                pinyin: 'Xièxie! Hěn gāoxìng rènshi nǐ!',
+                english: 'Thank you! Nice to meet you!',
+                affectionChange: 15,
+                consequence: 'Xiao Ai blushes and smiles warmly'
+              },
+              {
+                chinese: '嗯...',
+                pinyin: 'Ēn...',
+                english: 'Mm...',
+                affectionChange: -5,
+                consequence: 'Xiao Ai looks a bit confused by your cold response'
+              },
+              {
+                chinese: '請多指教',
+                pinyin: 'Qǐng duō zhǐjiào',
+                english: 'Please guide me',
+                affectionChange: 10,
+                consequence: 'Xiao Ai appreciates your politeness'
+              }
+            ]
+          }
+        ],
+        timedChallenge: {
+          id: 'intro_quickfire',
+          title: 'Introduction Quickfire',
+          type: 'quickfire',
+          timeLimit: 30,
+          description: 'Match Chinese greetings with their English meanings as fast as possible!',
+          data: {
+            pairs: [
+              { chinese: '你好', english: 'Hello' },
+              { chinese: '謝謝', english: 'Thank you' },
+              { chinese: '請多指教', english: 'Please guide me' },
+              { chinese: '很高興認識你', english: 'Nice to meet you' },
+              { chinese: '不客氣', english: 'You\'re welcome' },
+              { chinese: '對不起', english: 'Sorry' }
+            ]
+          },
+          rewards: {
+            perfect: { xp: 200, affection: 20 },
+            good: { xp: 150, affection: 10 },
+            fail: { xp: 50, affection: -10 }
+          }
+        }
+      },
+      {
+        id: 'seating_arrangement',
+        title: 'Desk Partners',
+        setting: 'Classroom 3-A',
+        timeOfDay: 'Morning',
+        weather: 'Sunny',
+        mood: 'Excitement and nervousness',
+        characters: ['xiaoming', 'xiaoai'],
+        dialogue: [
+          {
+            character: '小愛',
+            chinese: '看起來我們是同桌！',
+            pinyin: 'Kàn qǐlái wǒmen shì tóngzhuō!',
+            english: 'Looks like we\'re desk partners!',
+            emotion: 'excited',
+            voiceDelay: 0
+          }
+        ],
+        voiceChallenge: {
+          type: 'response',
+          trigger: 'Respond to becoming desk partners',
+          aiResponse: {
+            chinese: '我很期待和你一起學習！',
+            pinyin: 'Wǒ hěn qīdài hé nǐ yīqǐ xuéxí!',
+            english: 'I\'m looking forward to studying together with you!',
+            emotion: 'excited',
+            voiceSpeed: 1.0
+          },
+          correctResponses: ['我也是', '太好了', '一起加油'],
+          timeLimit: 8,
+          affectionReward: 15,
+          affectionPenalty: -8
+        }
+      }
+    ],
+    checkpointReward: {
+      type: 'achievement',
+      content: '🌟 First Day Survivor - You made it through your first day and caught Xiao Ai\'s attention!',
+      unlocks: ['voice_chat_mode', 'afternoon_scenes']
+    }
+  },
+  {
+    id: 2,
+    title: 'Secret Messages',
+    description: 'The art of classroom communication',
+    theme: 'Communication & Risk',
+    culturalFocus: 'Indirect communication and classroom dynamics',
+    estimatedTime: '20-25 min',
+    difficulty: 'Medium',
+    unlocked: false,
+    completed: false,
+    stars: 0,
+    scenes: [
+      {
+        id: 'math_class_boredom',
+        title: 'Boring Math Class',
+        setting: 'Mathematics Classroom',
+        timeOfDay: 'Late Morning',
+        weather: 'Overcast',
+        mood: 'Boredom turning to mischief',
+        characters: ['xiaoming', 'xiaoai', 'teacher'],
+        dialogue: [
+          {
+            character: '小明',
+            chinese: '數學課好無聊...',
+            pinyin: 'Shùxué kè hǎo wúliáo...',
+            english: 'Math class is so boring...',
+            emotion: 'bored',
+            voiceDelay: 0
+          }
+        ],
+        timedChallenge: {
+          id: 'note_writing_speed',
+          title: 'Secret Note Challenge',
+          type: 'speedtranslate',
+          timeLimit: 45,
+          description: 'Write the perfect note to ask Xiao Ai to lunch! Translate these romantic phrases quickly!',
+          data: {
+            phrases: [
+              { english: 'Do you want to have lunch together?', chinese: '你想一起吃午餐嗎？' },
+              { english: 'I think you\'re really nice', chinese: '我覺得你人很好' },
+              { english: 'Would you like to be friends?', chinese: '你想當朋友嗎？' },
+              { english: 'See you after class', chinese: '下課後見' }
+            ]
+          },
+          rewards: {
+            perfect: { xp: 300, affection: 25 },
+            good: { xp: 200, affection: 15 },
+            fail: { xp: 100, affection: -15 }
+          }
+        }
+      },
+      {
+        id: 'note_passing',
+        title: 'The Great Note Pass',
+        setting: 'Mathematics Classroom',
+        timeOfDay: 'Late Morning',
+        weather: 'Overcast',
+        mood: 'Suspense and risk',
+        characters: ['xiaoming', 'xiaoai', 'teacher'],
+        dialogue: [
+          {
+            character: '小明',
+            chinese: '現在！',
+            pinyin: 'Xiànzài!',
+            english: 'Now!',
+            emotion: 'determined',
+            voiceDelay: 0
+          }
+        ],
+        voiceChallenge: {
+          type: 'emotion',
+          trigger: 'Whisper the note passing',
+          aiResponse: {
+            chinese: '什麼？',
+            pinyin: 'Shénme?',
+            english: 'What?',
+            emotion: 'confused_whisper',
+            voiceSpeed: 0.7
+          },
+          correctResponses: ['紙條', '給你', '午餐'],
+          timeLimit: 3,
+          affectionReward: 20,
+          affectionPenalty: -20
+        }
+      }
+    ],
+    checkpointReward: {
+      type: 'scene',
+      content: '💕 Lunch Date Unlocked - Xiao Ai said yes to lunch! New romantic scenes available!',
+      unlocks: ['lunch_scenes', 'romance_vocabulary']
+    }
+  },
+  {
+    id: 3,
+    title: 'Lunch Date Destiny',
+    description: 'Your first real conversation alone',
+    theme: 'Romance & Connection',
+    culturalFocus: 'Dating culture and emotional expression',
+    estimatedTime: '25-30 min',
+    difficulty: 'Hard',
+    unlocked: false,
+    completed: false,
+    stars: 0,
+    scenes: [
+      {
+        id: 'cafeteria_meeting',
+        title: 'Cafeteria Rendezvous',
+        setting: 'School Cafeteria',
+        timeOfDay: 'Lunch Time',
+        weather: 'Sunny',
+        mood: 'Nervous excitement',
+        characters: ['xiaoming', 'xiaoai'],
+        dialogue: [
+          {
+            character: '小愛',
+            chinese: '你喜歡什麼食物？',
+            pinyin: 'Nǐ xǐhuān shénme shíwù?',
+            english: 'What food do you like?',
+            emotion: 'curious',
+            voiceDelay: 0,
+            choices: [
+              {
+                chinese: '我喜歡台灣菜',
+                pinyin: 'Wǒ xǐhuān Táiwān cài',
+                english: 'I like Taiwanese food',
+                affectionChange: 20,
+                consequence: 'Xiao Ai\'s eyes light up with excitement'
+              },
+              {
+                chinese: '什麼都可以',
+                pinyin: 'Shénme dōu kěyǐ',
+                english: 'Anything is fine',
+                affectionChange: 5,
+                consequence: 'Xiao Ai thinks you\'re not very decisive'
+              },
+              {
+                chinese: '我想知道你喜歡什麼',
+                pinyin: 'Wǒ xiǎng zhīdào nǐ xǐhuān shénme',
+                english: 'I want to know what you like',
+                affectionChange: 25,
+                consequence: 'Xiao Ai blushes at your thoughtfulness'
+              }
+            ]
+          }
+        ],
+        timedChallenge: {
+          id: 'food_connections',
+          title: 'Taiwanese Food Culture',
+          type: 'connections',
+          timeLimit: 60,
+          description: 'Group these Taiwanese foods by category to impress Xiao Ai with your cultural knowledge!',
+          data: {
+            words: ['珍珠奶茶', '牛肉麵', '小籠包', '臭豆腐', '芒果冰', '鳳梨酥', '蚵仔煎', '刨冰', '魯肉飯', '夜市', '茶葉蛋', '紅豆湯'],
+            groups: [
+              { category: 'Drinks', items: ['珍珠奶茶', '茶葉蛋', '紅豆湯', '芒果冰'], color: 'blue' },
+              { category: 'Main Dishes', items: ['牛肉麵', '魯肉飯', '蚵仔煎', '臭豆腐'], color: 'green' },
+              { category: 'Snacks', items: ['小籠包', '鳳梨酥', '茶葉蛋', '夜市'], color: 'yellow' },
+              { category: 'Desserts', items: ['芒果冰', '刨冰', '紅豆湯', '鳳梨酥'], color: 'pink' }
+            ]
+          },
+          rewards: {
+            perfect: { xp: 400, affection: 30 },
+            good: { xp: 250, affection: 20 },
+            fail: { xp: 150, affection: -25 }
+          }
+        }
+      }
+    ],
+    checkpointReward: {
+      type: 'voice',
+      content: '🎤 Voice Date Mode Unlocked - Have real voice conversations with Xiao Ai anytime!',
+      unlocks: ['free_voice_chat', 'advanced_scenarios']
+    }
+  }
+]
+
+// Voice Recognition Hook
+const useVoiceRecognition = () => {
+  const [isListening, setIsListening] = useState(false)
+  const [transcript, setTranscript] = useState('')
+  const [confidence, setConfidence] = useState(0)
+  const recognitionRef = useRef<any>(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition
+      recognitionRef.current = new SpeechRecognition()
+      recognitionRef.current.continuous = false
+      recognitionRef.current.interimResults = false
+      recognitionRef.current.lang = 'zh-TW'
+
+      recognitionRef.current.onresult = (event: any) => {
+        const result = event.results[0][0]
+        setTranscript(result.transcript)
+        setConfidence(result.confidence)
+      }
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false)
+      }
+    }
+  }, [])
+
+  const startListening = () => {
+    if (recognitionRef.current) {
+      setIsListening(true)
+      setTranscript('')
+      recognitionRef.current.start()
+    }
+  }
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop()
+      setIsListening(false)
+    }
+  }
+
+  return { isListening, transcript, confidence, startListening, stopListening }
 }
 
-// Game Components (keeping the mini-game components from before)
-const ConnectionsGameComponent = ({ game, onComplete }: any) => {
-  // [Previous connections game code - keeping it the same]
-  const [timeLeft, setTimeLeft] = useState(game.data.timeLimit || 90)
-  const [selectedWords, setSelectedWords] = useState<string[]>([])
-  const [foundGroups, setFoundGroups] = useState<string[]>([])
+// Text-to-Speech Hook
+const useTextToSpeech = () => {
+  const speak = (text: string, character?: Character) => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text)
+      
+      if (character) {
+        utterance.pitch = character.voiceSettings.pitch
+        utterance.rate = character.voiceSettings.rate
+      }
+      
+      // Try to use Chinese voice
+      const voices = speechSynthesis.getVoices()
+      const chineseVoice = voices.find(voice => voice.lang.includes('zh'))
+      if (chineseVoice) {
+        utterance.voice = chineseVoice
+      }
+      
+      speechSynthesis.speak(utterance)
+    }
+  }
+
+  const stop = () => {
+    if ('speechSynthesis' in window) {
+      speechSynthesis.cancel()
+    }
+  }
+
+  return { speak, stop }
+}
+
+// Enhanced Components
+
+const AffectionMeter = ({ 
+  currentAffection, 
+  maxAffection = 100, 
+  recentChange 
+}: { 
+  currentAffection: number
+  maxAffection?: number
+  recentChange?: number 
+}) => {
+  const percentage = (currentAffection / maxAffection) * 100
+  const [showChange, setShowChange] = useState(false)
+
+  useEffect(() => {
+    if (recentChange && recentChange !== 0) {
+      setShowChange(true)
+      setTimeout(() => setShowChange(false), 2000)
+    }
+  }, [recentChange])
+  
+  return (
+    <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border relative">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs sm:text-sm font-medium text-gray-700">Affection Level</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs sm:text-sm text-pink-600 font-bold">{currentAffection}/{maxAffection}</span>
+          {showChange && recentChange && (
+            <div className={`text-xs font-bold animate-bounce ${
+              recentChange > 0 ? 'text-green-500' : 'text-red-500'
+            }`}>
+              {recentChange > 0 ? '+' : ''}{recentChange}
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3 relative overflow-hidden">
+        <div 
+          className={`h-full rounded-full transition-all duration-500 relative ${
+            percentage >= 80 ? 'bg-gradient-to-r from-pink-400 to-red-500' :
+            percentage >= 50 ? 'bg-gradient-to-r from-yellow-400 to-orange-500' :
+            'bg-gradient-to-r from-gray-400 to-gray-500'
+          }`}
+          style={{ width: `${percentage}%` }}
+        >
+          <div className="absolute inset-0 bg-white bg-opacity-30 animate-pulse"></div>
+        </div>
+      </div>
+      <div className="flex justify-between text-xs text-gray-500 mt-1">
+        <span>😐</span>
+        <span>😊</span>
+        <span>😍</span>
+        <span>💕</span>
+      </div>
+      
+      {/* Affection Status */}
+      <div className="mt-2 text-center">
+        <span className={`text-xs px-2 py-1 rounded-full ${
+          percentage >= 80 ? 'bg-red-100 text-red-600' :
+          percentage >= 60 ? 'bg-pink-100 text-pink-600' :
+          percentage >= 40 ? 'bg-yellow-100 text-yellow-600' :
+          percentage >= 20 ? 'bg-gray-100 text-gray-600' :
+          'bg-red-100 text-red-800'
+        }`}>
+          {percentage >= 80 ? '💕 In Love' :
+           percentage >= 60 ? '😍 Interested' :
+           percentage >= 40 ? '😊 Friendly' :
+           percentage >= 20 ? '😐 Neutral' :
+           '😒 Annoyed'}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+const GameStats = ({ gameState }: { gameState: GameState }) => {
+  return (
+    <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border">
+      <h3 className="font-semibold mb-3 text-sm sm:text-base flex items-center gap-2">
+        <Trophy className="w-4 h-4 text-yellow-500" />
+        Game Stats
+      </h3>
+      <div className="grid grid-cols-2 gap-3 text-xs sm:text-sm">
+        <div className="text-center p-2 bg-yellow-50 rounded">
+          <div className="font-bold text-yellow-600">{gameState.currentStreak}</div>
+          <div className="text-yellow-700">Current Streak</div>
+        </div>
+        <div className="text-center p-2 bg-blue-50 rounded">
+          <div className="font-bold text-blue-600">{gameState.perfectGames}</div>
+          <div className="text-blue-700">Perfect Games</div>
+        </div>
+        <div className="text-center p-2 bg-green-50 rounded">
+          <div className="font-bold text-green-600">{gameState.voiceInteractions}</div>
+          <div className="text-green-700">Voice Chats</div>
+        </div>
+        <div className="text-center p-2 bg-purple-50 rounded">
+          <div className="font-bold text-purple-600">{Math.round(gameState.totalTimeSpent / 60)}m</div>
+          <div className="text-purple-700">Time Played</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const TimedChallengeInterface = ({ 
+  challenge, 
+  onComplete 
+}: { 
+  challenge: TimedChallenge
+  onComplete: (success: boolean, score: number, timeLeft: number) => void 
+}) => {
+  const [timeLeft, setTimeLeft] = useState(challenge.timeLimit)
   const [gameStarted, setGameStarted] = useState(false)
   const [gameEnded, setGameEnded] = useState(false)
+  const [score, setScore] = useState(0)
+  const [currentQuestion, setCurrentQuestion] = useState(0)
+  const [answers, setAnswers] = useState<string[]>([])
 
-  // Simplified version for space
-  if (!gameStarted) {
+  useEffect(() => {
+    let timer: NodeJS.Timeout
+    if (gameStarted && !gameEnded && timeLeft > 0) {
+      timer = setTimeout(() => {
+        setTimeLeft(timeLeft - 1)
+      }, 1000)
+    } else if (timeLeft === 0 && gameStarted && !gameEnded) {
+      endGame()
+    }
+    return () => clearTimeout(timer)
+  }, [timeLeft, gameStarted, gameEnded])
+
+  const endGame = () => {
+    setGameEnded(true)
+    const percentage = (score / challenge.data.pairs?.length || challenge.data.phrases?.length || 1) * 100
+    const success = percentage >= 70
+    onComplete(success, percentage, timeLeft)
+  }
+
+  const startGame = () => {
+    setGameStarted(true)
+    setTimeLeft(challenge.timeLimit)
+  }
+
+  if (challenge.type === 'quickfire') {
     return (
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-xl font-bold mb-4">{game.title}</h3>
-        <p className="text-gray-600 mb-6">{game.description}</p>
-        <button
-          onClick={() => setGameStarted(true)}
-          className="w-full bg-purple-600 text-white py-3 rounded-lg font-bold"
-        >
-          Start Game
-        </button>
+      <div className="bg-white rounded-lg p-4 sm:p-6">
+        <div className="text-center mb-4">
+          <h3 className="text-lg sm:text-xl font-bold flex items-center justify-center gap-2">
+            <Zap className="w-5 h-5 text-yellow-500" />
+            {challenge.title}
+          </h3>
+          <p className="text-sm text-gray-600">{challenge.description}</p>
+        </div>
+
+        {!gameStarted ? (
+          <div className="text-center">
+            <div className="bg-red-50 rounded-lg p-4 mb-4">
+              <Timer className="w-8 h-8 text-red-500 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-red-600">{challenge.timeLimit}s</div>
+              <div className="text-sm text-red-700">Time Limit</div>
+            </div>
+            <button
+              onClick={startGame}
+              className="w-full bg-gradient-to-r from-red-500 to-orange-500 text-white py-4 rounded-lg font-bold text-lg hover:from-red-600 hover:to-orange-600 transition-all"
+            >
+              🚀 Start Challenge!
+            </button>
+          </div>
+        ) : gameEnded ? (
+          <div className="text-center">
+            <div className="text-4xl mb-4">
+              {score >= challenge.data.pairs.length * 0.8 ? '🌟' : 
+               score >= challenge.data.pairs.length * 0.6 ? '👍' : '😅'}
+            </div>
+            <div className="text-2xl font-bold mb-2">
+              {score}/{challenge.data.pairs.length} Correct
+            </div>
+            <div className="text-lg text-gray-600 mb-4">
+              {score >= challenge.data.pairs.length * 0.8 ? 'Perfect! Amazing work!' : 
+               score >= challenge.data.pairs.length * 0.6 ? 'Good job! Keep practicing!' : 
+               'Keep trying! You\'ll get it!'}
+            </div>
+          </div>
+        ) : (
+          <div>
+            {/* Timer */}
+            <div className="flex items-center justify-center mb-4">
+              <div className={`text-2xl font-bold ${
+                timeLeft <= 5 ? 'text-red-500 animate-pulse' : 
+                timeLeft <= 10 ? 'text-orange-500' : 'text-green-500'
+              }`}>
+                <Timer className="w-6 h-6 inline mr-2" />
+                {timeLeft}s
+              </div>
+            </div>
+
+            {/* Current Question */}
+            <div className="bg-blue-50 rounded-lg p-4 mb-4 text-center">
+              <div className="text-2xl font-bold mb-2">
+                {challenge.data.pairs[currentQuestion]?.chinese}
+              </div>
+              <div className="text-sm text-gray-600">
+                Question {currentQuestion + 1} of {challenge.data.pairs.length}
+              </div>
+            </div>
+
+            {/* Answer Options */}
+            <div className="grid grid-cols-1 gap-2">
+              {challenge.data.pairs.map((pair: any, index: number) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    if (index === currentQuestion) {
+                      setScore(score + 1)
+                    }
+                    if (currentQuestion < challenge.data.pairs.length - 1) {
+                      setCurrentQuestion(currentQuestion + 1)
+                    } else {
+                      endGame()
+                    }
+                  }}
+                  className="p-3 bg-gray-100 hover:bg-blue-100 rounded-lg text-left transition-colors"
+                >
+                  {pair.english}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     )
   }
 
-  if (gameEnded) {
-    const score = (foundGroups.length / game.data.groups.length) * 100
-    return (
-      <div className="bg-white rounded-xl p-6 shadow-lg text-center">
-        <h3 className="text-xl font-bold mb-4">Game Complete!</h3>
-        <div className="text-6xl mb-4">{score >= 90 ? '🌟' : score >= 70 ? '👍' : '😅'}</div>
-        <button
-          onClick={() => onComplete(score >= 70, score)}
-          className="bg-green-600 text-white px-6 py-3 rounded-lg"
-        >
-          Continue Story
-        </button>
-      </div>
+  // Other challenge types would go here...
+  return <div>Challenge type not implemented yet</div>
+}
+
+const VoiceInteractionInterface = ({ 
+  interaction, 
+  character,
+  onComplete 
+}: { 
+  interaction: VoiceInteraction
+  character: Character
+  onComplete: (success: boolean, affectionChange: number) => void 
+}) => {
+  const { isListening, transcript, confidence, startListening, stopListening } = useVoiceRecognition()
+  const { speak, stop } = useTextToSpeech()
+  const [timeLeft, setTimeLeft] = useState(interaction.timeLimit)
+  const [hasStarted, setHasStarted] = useState(false)
+  const [isComplete, setIsComplete] = useState(false)
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout
+    if (hasStarted && !isComplete && timeLeft > 0) {
+      timer = setTimeout(() => {
+        setTimeLeft(timeLeft - 1)
+      }, 1000)
+    } else if (timeLeft === 0 && hasStarted && !isComplete) {
+      handleTimeout()
+    }
+    return () => clearTimeout(timer)
+  }, [timeLeft, hasStarted, isComplete])
+
+  useEffect(() => {
+    if (transcript && hasStarted && !isComplete) {
+      checkResponse(transcript)
+    }
+  }, [transcript])
+
+  const startInteraction = () => {
+    setHasStarted(true)
+    speak(interaction.aiResponse.chinese, character)
+    setTimeout(() => {
+      setTimeLeft(interaction.timeLimit)
+    }, 2000)
+  }
+
+  const checkResponse = (response: string) => {
+    const isCorrect = interaction.correctResponses.some(correct => 
+      response.includes(correct)
     )
+    
+    setIsComplete(true)
+    
+    if (isCorrect) {
+      onComplete(true, interaction.affectionReward)
+    } else {
+      onComplete(false, interaction.affectionPenalty)
+    }
+  }
+
+  const handleTimeout = () => {
+    setIsComplete(true)
+    onComplete(false, interaction.affectionPenalty)
   }
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-lg">
+    <div className="bg-white rounded-lg p-4 sm:p-6">
       <div className="text-center mb-4">
-        <h3 className="text-xl font-bold">{game.title}</h3>
-        <div className="text-2xl font-bold text-blue-600">{timeLeft}s</div>
-      </div>
-      
-      <div className="grid grid-cols-4 gap-2 mb-4">
-        {game.data.words.map((word: string, index: number) => (
-          <button
-            key={index}
-            className="p-2 border rounded hover:bg-blue-100"
-            onClick={() => {
-              // Simplified selection logic
-              if (selectedWords.includes(word)) {
-                setSelectedWords(selectedWords.filter(w => w !== word))
-              } else if (selectedWords.length < 4) {
-                setSelectedWords([...selectedWords, word])
-              }
-            }}
-          >
-            {word}
-          </button>
-        ))}
+        <h3 className="text-lg sm:text-xl font-bold flex items-center justify-center gap-2">
+          <Mic className="w-5 h-5 text-blue-500" />
+          Voice Challenge
+        </h3>
+        <p className="text-sm text-gray-600">{interaction.trigger}</p>
       </div>
 
-      <button
-        onClick={() => {
-          // Simplified completion logic
-          setGameEnded(true)
-        }}
-        className="w-full bg-blue-600 text-white py-3 rounded-lg"
-      >
-        Submit Group
-      </button>
+      {!hasStarted ? (
+        <div className="text-center">
+          <div className="text-6xl mb-4">{character.avatar}</div>
+          <div className="bg-blue-50 rounded-lg p-4 mb-4">
+            <div className="text-lg font-medium mb-2">Get ready to respond to:</div>
+            <div className="text-sm text-gray-600 mb-2">{character.name}</div>
+            <div className="text-base">{interaction.aiResponse.english}</div>
+          </div>
+          <button
+            onClick={startInteraction}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-4 rounded-lg font-bold text-lg hover:from-blue-600 hover:to-purple-600 transition-all"
+          >
+            🎤 Start Voice Challenge
+          </button>
+        </div>
+      ) : !isComplete ? (
+        <div className="text-center">
+          {/* Timer */}
+          <div className={`text-3xl font-bold mb-4 ${
+            timeLeft <= 2 ? 'text-red-500 animate-pulse' : 
+            timeLeft <= 5 ? 'text-orange-500' : 'text-blue-500'
+          }`}>
+            <Clock className="w-8 h-8 inline mr-2" />
+            {timeLeft}s
+          </div>
+
+          {/* AI Character Speaking */}
+          <div className="bg-blue-50 rounded-lg p-4 mb-4">
+            <div className="text-4xl mb-2">{character.avatar}</div>
+            <div className="text-lg font-medium">{interaction.aiResponse.chinese}</div>
+            <div className="text-sm text-blue-600">({interaction.aiResponse.pinyin})</div>
+            <div className="text-sm text-gray-600">{interaction.aiResponse.english}</div>
+          </div>
+
+          {/* Voice Input */}
+          <div className="mb-4">
+            <button
+              onMouseDown={startListening}
+              onMouseUp={stopListening}
+              onTouchStart={startListening}
+              onTouchEnd={stopListening}
+              className={`w-full py-8 rounded-lg font-bold text-lg transition-all ${
+                isListening 
+                  ? 'bg-red-500 text-white scale-105 shadow-lg' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              <Mic className={`w-8 h-8 mx-auto mb-2 ${isListening ? 'animate-pulse' : ''}`} />
+              {isListening ? 'Listening...' : 'Hold to Speak'}
+            </button>
+          </div>
+
+          {/* Transcript */}
+          {transcript && (
+            <div className="bg-yellow-50 rounded-lg p-3 mb-4">
+              <div className="text-sm text-gray-600">You said:</div>
+              <div className="font-medium">{transcript}</div>
+              <div className="text-xs text-gray-500">Confidence: {Math.round(confidence * 100)}%</div>
+            </div>
+          )}
+
+          {/* Hints */}
+          <div className="text-xs text-gray-500">
+            Try saying: {interaction.correctResponses.join(', ')}
+          </div>
+        </div>
+      ) : (
+        <div className="text-center">
+          <div className="text-4xl mb-4">
+            {interaction.affectionReward > 0 ? '🌟' : '😅'}
+          </div>
+          <div className="text-lg font-bold mb-2">
+            {interaction.affectionReward > 0 ? 'Perfect Response!' : 'Try Again Next Time!'}
+          </div>
+          <div className="text-sm text-gray-600">
+            {interaction.affectionReward > 0 
+              ? `+${interaction.affectionReward} Affection` 
+              : `${interaction.affectionPenalty} Affection`}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-const VoicePracticeInterface = ({ chapter, onComplete }: any) => {
-  const [sessionStarted, setSessionStarted] = useState(false)
-  const [messages, setMessages] = useState<any[]>([])
+const StoryScenePlayer = ({ 
+  scene, 
+  onComplete 
+}: { 
+  scene: StoryScene
+  onComplete: (affectionChange: number) => void 
+}) => {
+  const [currentDialogue, setCurrentDialogue] = useState(0)
+  const [showChoices, setShowChoices] = useState(false)
+  const [selectedChoice, setSelectedChoice] = useState<any>(null)
+  const { speak } = useTextToSpeech()
 
-  if (!sessionStarted) {
-    return (
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-xl font-bold mb-4">🎤 {chapter.title} - Voice Practice</h3>
-        <p className="text-gray-600 mb-4">{chapter.voicePractice.scenario}</p>
+  const currentLine = scene.dialogue[currentDialogue]
+  const character = characters.find(c => c.chineseName === currentLine.character)
+
+  useEffect(() => {
+    // Auto-play voice for AI characters
+    if (character && character.id !== 'xiaoming') {
+      setTimeout(() => {
+        speak(currentLine.chinese, character)
+      }, currentLine.voiceDelay)
+    }
+  }, [currentDialogue])
+
+  const nextDialogue = () => {
+    if (currentLine.choices) {
+      setShowChoices(true)
+    } else if (currentDialogue < scene.dialogue.length - 1) {
+      setCurrentDialogue(currentDialogue + 1)
+    } else {
+      onComplete(0) // No affection change for regular dialogue
+    }
+  }
+
+  const handleChoice = (choice: any) => {
+    setSelectedChoice(choice)
+    setShowChoices(false)
+    onComplete(choice.affectionChange)
+  }
+
+  return (
+    <div className="bg-white rounded-lg p-4 sm:p-6">
+      {/* Scene Header */}
+      <div className="text-center mb-4">
+        <h3 className="text-lg sm:text-xl font-bold">{scene.title}</h3>
+        <div className="text-sm text-gray-600 flex items-center justify-center gap-4">
+          <span>📍 {scene.setting}</span>
+          <span>🕐 {scene.timeOfDay}</span>
+          <span>🌤️ {scene.weather}</span>
+        </div>
+        <div className={`text-xs px-3 py-1 rounded-full mt-2 inline-block ${
+          scene.mood.includes('nervous') ? 'bg-yellow-100 text-yellow-700' :
+          scene.mood.includes('romantic') ? 'bg-pink-100 text-pink-700' :
+          scene.mood.includes('excited') ? 'bg-green-100 text-green-700' :
+          'bg-blue-100 text-blue-700'
+        }`}>
+          {scene.mood}
+        </div>
+      </div>
+
+      {/* Current Dialogue */}
+      <div className="bg-gray-50 rounded-lg p-4 mb-4">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="text-3xl">{character?.avatar}</div>
+          <div>
+            <div className="font-semibold">{character?.name}</div>
+            <div className="text-sm text-gray-600">{currentLine.character}</div>
+          </div>
+          <div className="ml-auto">
+            <button
+              onClick={() => speak(currentLine.chinese, character)}
+              className="p-2 bg-blue-100 rounded-full hover:bg-blue-200"
+            >
+              <Volume2 className="w-4 h-4 text-blue-600" />
+            </button>
+          </div>
+        </div>
         
-        <div className="bg-yellow-50 rounded-lg p-4 mb-4">
-          <h4 className="font-bold mb-2">Key Phrases to Use:</h4>
-          {chapter.voicePractice.keyPhrases.map((phrase: string, index: number) => (
-            <div key={index} className="text-sm">{phrase}</div>
+        <div className="space-y-2">
+          <div className="text-lg font-medium">{currentLine.chinese}</div>
+          <div className="text-sm text-blue-600">({currentLine.pinyin})</div>
+          <div className="text-gray-700">{currentLine.english}</div>
+        </div>
+      </div>
+
+      {/* Choices or Continue */}
+      {showChoices && currentLine.choices ? (
+        <div className="space-y-3">
+          <div className="text-center font-semibold text-gray-700">Choose your response:</div>
+          {currentLine.choices.map((choice, index) => (
+            <button
+              key={index}
+              onClick={() => handleChoice(choice)}
+              className={`w-full p-3 rounded-lg text-left transition-all border-2 ${
+                choice.affectionChange > 0 
+                  ? 'border-green-200 bg-green-50 hover:bg-green-100' 
+                  : choice.affectionChange < 0
+                  ? 'border-red-200 bg-red-50 hover:bg-red-100'
+                  : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+              }`}
+            >
+              <div className="font-medium">{choice.chinese}</div>
+              <div className="text-sm text-blue-600">({choice.pinyin})</div>
+              <div className="text-sm text-gray-600">{choice.english}</div>
+              <div className={`text-xs mt-1 ${
+                choice.affectionChange > 0 ? 'text-green-600' :
+                choice.affectionChange < 0 ? 'text-red-600' :
+                'text-gray-500'
+              }`}>
+                {choice.affectionChange > 0 ? `+${choice.affectionChange} ❤️` :
+                 choice.affectionChange < 0 ? `${choice.affectionChange} 💔` :
+                 'Neutral'}
+              </div>
+            </button>
           ))}
         </div>
-
+      ) : selectedChoice ? (
+        <div className="text-center">
+          <div className="bg-yellow-50 rounded-lg p-4 mb-4">
+            <div className="font-semibold">Result:</div>
+            <div className="text-sm">{selectedChoice.consequence}</div>
+          </div>
+          <button
+            onClick={() => onComplete(0)}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+          >
+            Continue Story
+          </button>
+        </div>
+      ) : (
         <button
-          onClick={() => setSessionStarted(true)}
-          className="w-full bg-purple-600 text-white py-3 rounded-lg font-bold"
+          onClick={nextDialogue}
+          className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold"
         >
-          Start Conversation with Xiao Ai
+          {currentDialogue < scene.dialogue.length - 1 ? 'Continue' : 'Complete Scene'}
         </button>
+      )}
+
+      {/* Progress */}
+      <div className="mt-4">
+        <div className="flex justify-between text-xs text-gray-500 mb-1">
+          <span>Scene Progress</span>
+          <span>{currentDialogue + 1} / {scene.dialogue.length}</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-1">
+          <div 
+            className="bg-blue-500 h-1 rounded-full transition-all duration-300"
+            style={{ width: `${((currentDialogue + 1) / scene.dialogue.length) * 100}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Main Gamified Learning Path Component
+const GamifiedRomanceLearningPath: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const [currentEpisode, setCurrentEpisode] = useState(0)
+  const [currentScene, setCurrentScene] = useState(0)
+  const [showSceneContent, setShowSceneContent] = useState(false)
+  const [userProgress, setUserProgress] = useState({
+    xp: 0,
+    affection: 25,
+    completedEpisodes: [] as number[],
+    completedScenes: [] as string[]
+  })
+  const [gameState, setGameState] = useState<GameState>({
+    currentStreak: 0,
+    maxStreak: 0,
+    totalTimeSpent: 0,
+    perfectGames: 0,
+    voiceInteractions: 0,
+    currentCombo: 0,
+    lastPlayTime: new Date()
+  })
+  const [recentAffectionChange, setRecentAffectionChange] = useState(0)
+
+  const episode = episodes[currentEpisode]
+  const scene = episode?.scenes[currentScene]
+
+  const handleAffectionChange = (change: number) => {
+    setRecentAffectionChange(change)
+    setUserProgress(prev => ({
+      ...prev,
+      affection: Math.max(0, Math.min(100, prev.affection + change))
+    }))
+  }
+
+  const handleSceneComplete = (affectionChange: number) => {
+    handleAffectionChange(affectionChange)
+    
+    if (scene) {
+      setUserProgress(prev => ({
+        ...prev,
+        completedScenes: [...prev.completedScenes, scene.id]
+      }))
+    }
+    
+    // Move to next scene or complete episode
+    if (currentScene < episode.scenes.length - 1) {
+      setCurrentScene(currentScene + 1)
+    } else {
+      // Episode completed
+      alert(`🎉 Episode ${episode.id} completed! ${episode.checkpointReward.content}`)
+      setCurrentScene(0)
+    }
+    
+    setShowSceneContent(false)
+  }
+
+  const startScene = (sceneIndex: number) => {
+    setCurrentScene(sceneIndex)
+    setShowSceneContent(true)
+  }
+
+  if (showSceneContent && scene) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          {/* Mobile Header */}
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => setShowSceneContent(false)}
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm"
+            >
+              <ArrowRight className="w-4 h-4 rotate-180" />
+              Back
+            </button>
+            
+            <div className="text-center flex-1 mx-4">
+              <h1 className="text-lg font-bold text-gray-800 truncate">
+                {scene.title}
+              </h1>
+              <p className="text-xs text-gray-600">Episode {episode.id}: {episode.title}</p>
+            </div>
+            
+            <div className="text-right text-xs">
+              <div className="text-gray-600">💕 {userProgress.affection}</div>
+              <div className="text-blue-600">⚡ {gameState.currentStreak}</div>
+            </div>
+          </div>
+          
+          {/* Scene Content */}
+          <StoryScenePlayer 
+            scene={scene} 
+            onComplete={handleSceneComplete}
+          />
+          
+          {/* Voice Challenge */}
+          {scene.voiceChallenge && (
+            <div className="mt-4">
+              <VoiceInteractionInterface
+                interaction={scene.voiceChallenge}
+                character={characters.find(c => c.chineseName === '小愛') || characters[1]}
+                onComplete={(success, affectionChange) => {
+                  handleAffectionChange(affectionChange)
+                  setGameState(prev => ({
+                    ...prev,
+                    voiceInteractions: prev.voiceInteractions + 1
+                  }))
+                }}
+              />
+            </div>
+          )}
+          
+          {/* Timed Challenge */}
+          {scene.timedChallenge && (
+            <div className="mt-4">
+              <TimedChallengeInterface
+                challenge={scene.timedChallenge}
+                onComplete={(success, score, timeLeft) => {
+                  const reward = success ? scene.timedChallenge!.rewards.perfect : scene.timedChallenge!.rewards.fail
+                  setUserProgress(prev => ({
+                    ...prev,
+                    xp: prev.xp + reward.xp
+                  }))
+                  handleAffectionChange(reward.affection)
+                  
+                  if (success && score >= 90) {
+                    setGameState(prev => ({
+                      ...prev,
+                      perfectGames: prev.perfectGames + 1,
+                      currentStreak: prev.currentStreak + 1
+                    }))
+                  }
+                }}
+              />
+            </div>
+          )}
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-lg">
-      <div className="bg-purple-600 text-white p-4 rounded-t-lg mb-4">
-        <h3 className="font-bold">Talking with 小愛</h3>
-      </div>
-
-      <div className="h-64 bg-gray-50 rounded p-4 mb-4 overflow-y-auto">
-        {messages.map((msg, index) => (
-          <div key={index} className={`mb-2 ${msg.type === 'user' ? 'text-right' : 'text-left'}`}>
-            <div className={`inline-block p-2 rounded ${
-              msg.type === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200'
-            }`}>
-              {msg.content}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex gap-2">
-        <input
-          type="text"
-          placeholder="Type your response in Chinese..."
-          className="flex-1 p-2 border rounded"
-        />
-        <button className="bg-purple-600 text-white px-4 py-2 rounded">
-          Send
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
+      <div className="max-w-6xl mx-auto px-4 py-4">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4"
+        >
+          <ArrowRight className="w-4 h-4 rotate-180" />
+          Back to Arcs
         </button>
-      </div>
-
-      <button
-        onClick={() => onComplete(chapter.voicePractice.affectionReward)}
-        className="w-full bg-green-600 text-white py-3 rounded-lg mt-4"
-      >
-        Complete Chapter
-      </button>
-    </div>
-  )
-}
-
-// Main Component
-const TaiwanRomanceStoryChapters: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const [gameProgress, setGameProgress] = useState<GameProgress>({
-    currentChapter: 1,
-    totalAffection: 15,
-    chaptersCompleted: [],
-    gamesCompleted: [],
-    perfectChapters: [],
-    storyEnding: 'incomplete'
-  })
-
-  const [currentView, setCurrentView] = useState<'overview' | 'chapter' | 'game' | 'voice'>('overview')
-  const [selectedChapter, setSelectedChapter] = useState<StoryChapter | null>(null)
-  const [currentGame, setCurrentGame] = useState<any>(null)
-  const [recentAffectionChange, setRecentAffectionChange] = useState(0)
-
-  const handleGameComplete = (success: boolean, score: number, gameData: any) => {
-    let affectionChange = 0
-    
-    if (success && score >= 90) {
-      affectionChange = gameData.affectionImpact.perfect
-    } else if (success && score >= 70) {
-      affectionChange = gameData.affectionImpact.good
-    } else {
-      affectionChange = gameData.affectionImpact.poor
-    }
-
-    setRecentAffectionChange(affectionChange)
-    setGameProgress(prev => ({
-      ...prev,
-      totalAffection: Math.max(0, prev.totalAffection + affectionChange),
-      gamesCompleted: [...prev.gamesCompleted, gameData.id]
-    }))
-
-    setCurrentView('chapter')
-  }
-
-  const handleVoiceComplete = (affectionReward: number) => {
-    setRecentAffectionChange(affectionReward)
-    setGameProgress(prev => {
-      const newAffection = prev.totalAffection + affectionReward
-      const newCompleted = [...prev.chaptersCompleted, selectedChapter!.id]
-      
-      return {
-        ...prev,
-        totalAffection: newAffection,
-        chaptersCompleted: newCompleted,
-        currentChapter: selectedChapter!.id + 1
-      }
-    })
-
-    // Check if story is complete
-    if (selectedChapter?.id === 5) {
-      const finalAffection = gameProgress.totalAffection + affectionReward
-      let ending: GameProgress['storyEnding'] = 'failed'
-      
-      if (finalAffection >= STORY_ENDINGS.PERFECT) ending = 'perfect'
-      else if (finalAffection >= STORY_ENDINGS.GOOD) ending = 'good'  
-      else if (finalAffection >= STORY_ENDINGS.OKAY) ending = 'okay'
-      else if (finalAffection >= STORY_ENDINGS.BAD) ending = 'bad'
-      
-      setGameProgress(prev => ({ ...prev, storyEnding: ending }))
-    }
-
-    setCurrentView('overview')
-    setSelectedChapter(null)
-  }
-
-  const getAffectionStatus = () => {
-    const affection = gameProgress.totalAffection
-    if (affection >= 180) return { emoji: '💕', text: 'Deeply in Love', color: 'text-red-600' }
-    if (affection >= 150) return { emoji: '😍', text: 'Strong Romance', color: 'text-pink-600' }
-    if (affection >= 100) return { emoji: '😊', text: 'Good Friends', color: 'text-yellow-600' }
-    if (affection >= 50) return { emoji: '🙂', text: 'Getting Closer', color: 'text-blue-600' }
-    return { emoji: '😐', text: 'Acquaintances', color: 'text-gray-600' }
-  }
-
-  // Game View
-  if (currentView === 'game' && currentGame) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
-        <div className="max-w-4xl mx-auto">
-          <button
-            onClick={() => setCurrentView('chapter')}
-            className="mb-4 flex items-center gap-2 text-purple-600"
-          >
-            <ArrowRight className="w-4 h-4 rotate-180" />
-            Back to Chapter
-          </button>
-          <ConnectionsGameComponent
-            game={currentGame}
-            onComplete={(success: boolean, score: number) => 
-              handleGameComplete(success, score, currentGame)
-            }
-          />
-        </div>
-      </div>
-    )
-  }
-
-  // Voice Practice View
-  if (currentView === 'voice' && selectedChapter) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
-        <div className="max-w-4xl mx-auto">
-          <button
-            onClick={() => setCurrentView('chapter')}
-            className="mb-4 flex items-center gap-2 text-purple-600"
-          >
-            <ArrowRight className="w-4 h-4 rotate-180" />
-            Back to Chapter
-          </button>
-          <VoicePracticeInterface
-            chapter={selectedChapter}
-            onComplete={handleVoiceComplete}
-          />
-        </div>
-      </div>
-    )
-  }
-
-  // Chapter Detail View  
-  if (currentView === 'chapter' && selectedChapter) {
-    const isUnlocked = selectedChapter.id <= gameProgress.currentChapter
-    const isCompleted = gameProgress.chaptersCompleted.includes(selectedChapter.id)
-    
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 p-4">
-        <div className="max-w-4xl mx-auto">
-          <button
-            onClick={() => setCurrentView('overview')}
-            className="mb-6 flex items-center gap-2 text-blue-600"
-          >
-            <ArrowRight className="w-4 h-4 rotate-180" />
-            Back to Story Overview
-          </button>
-
-          {/* Chapter Header */}
-          <div className="bg-white rounded-xl p-6 shadow-lg mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h1 className="text-2xl font-bold">Chapter {selectedChapter.id}: {selectedChapter.title}</h1>
-              {isCompleted && <div className="text-green-600 font-bold">✓ Completed</div>}
-            </div>
-            
-            <h2 className="text-lg text-gray-600 mb-4">{selectedChapter.subtitle}</h2>
-            
-            <div className="bg-blue-50 rounded-lg p-4 mb-4">
-              <h3 className="font-bold text-blue-800 mb-2">📖 Story Context</h3>
-              <p className="text-blue-700 text-sm">{selectedChapter.storyContext}</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div><strong>📍 Setting:</strong> {selectedChapter.setting}</div>
-              <div><strong>🕐 Time:</strong> {selectedChapter.timeOfDay}</div>
-              <div><strong>💭 Mood:</strong> {selectedChapter.mood}</div>
-            </div>
-          </div>
-
-          {/* Learning Content */}
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            {/* Vocabulary */}
-            <div className="bg-white rounded-xl p-4 shadow-lg">
-              <h3 className="font-bold mb-4 flex items-center gap-2">
-                📚 Key Vocabulary
-              </h3>
-              <div className="space-y-3">
-                {selectedChapter.keyVocabulary.map((vocab, index) => (
-                  <div key={index} className="border-l-4 border-blue-500 pl-3">
-                    <div className="font-bold">{vocab.chinese}</div>
-                    <div className="text-sm text-blue-600">({vocab.pinyin})</div>
-                    <div className="text-gray-700">{vocab.english}</div>
-                    <div className="text-xs text-gray-500 italic">{vocab.context}</div>
-                  </div>
-                ))}
+        
+        {/* Header */}
+        <div className="text-center mb-6">
+          <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-2">
+            🎭 Voice-Powered Romance Drama
+          </h1>
+          <p className="text-sm sm:text-lg text-gray-600 mb-4">
+            Talk to AI characters, complete timed challenges, and build real relationships!
+          </p>
+          
+          {/* Game Features Banner */}
+          <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg p-4 mb-6">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs sm:text-sm">
+              <div className="text-center">
+                <Mic className="w-6 h-6 mx-auto mb-1" />
+                <div>Voice Chat</div>
               </div>
-            </div>
-
-            {/* Sentence Patterns */}
-            <div className="bg-white rounded-xl p-4 shadow-lg">
-              <h3 className="font-bold mb-4 flex items-center gap-2">
-                🔧 Sentence Patterns
-              </h3>
-              <div className="space-y-4">
-                {selectedChapter.sentencePatterns.map((pattern, index) => (
-                  <div key={index} className="border rounded p-3 bg-green-50">
-                    <div className="font-bold text-green-800">{pattern.pattern}</div>
-                    <div className="text-sm text-green-600 mb-2">{pattern.explanation}</div>
-                    {pattern.examples.map((example, exIndex) => (
-                      <div key={exIndex} className="text-sm border-l-2 border-green-300 pl-2 mb-1">
-                        <div>{example.chinese} ({example.pinyin})</div>
-                        <div className="text-gray-600">{example.english}</div>
-                      </div>
-                    ))}
-                  </div>
-                ))}
+              <div className="text-center">
+                <Timer className="w-6 h-6 mx-auto mb-1" />
+                <div>Timed Games</div>
+              </div>
+              <div className="text-center">
+                <Heart className="w-6 h-6 mx-auto mb-1" />
+                <div>Real Stakes</div>
+              </div>
+              <div className="text-center">
+                <Trophy className="w-6 h-6 mx-auto mb-1" />
+                <div>Achievements</div>
               </div>
             </div>
           </div>
-
-          {/* Story Dialogue */}
-          <div className="bg-white rounded-xl p-6 shadow-lg mb-6">
-            <h3 className="font-bold mb-4 flex items-center gap-2">
-              💬 Chapter Dialogue
+        </div>
+        
+        {/* Stats Grid */}
+        <div className="grid lg:grid-cols-3 gap-4 mb-6">
+          <AffectionMeter 
+            currentAffection={userProgress.affection} 
+            recentChange={recentAffectionChange}
+          />
+          <GameStats gameState={gameState} />
+          <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border">
+            <h3 className="font-semibold mb-3 text-sm flex items-center gap-2">
+              <Star className="w-4 h-4 text-yellow-500" />
+              Progress
             </h3>
-            <div className="space-y-4">
-              {selectedChapter.dialogue.map((line, index) => (
-                <div key={index} className="border rounded-lg p-4">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-2xl">{line.avatar}</span>
-                    <div className="font-bold">{line.character}</div>
-                    <div className="text-xs text-gray-500">({line.emotion})</div>
+            <div className="space-y-2 text-xs sm:text-sm">
+              <div className="flex justify-between">
+                <span>Total XP:</span>
+                <span className="font-bold text-blue-600">{userProgress.xp}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Scenes:</span>
+                <span className="font-bold text-green-600">{userProgress.completedScenes.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Episodes:</span>
+                <span className="font-bold text-purple-600">{userProgress.completedEpisodes.length}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Episodes */}
+        <div className="space-y-4">
+          {episodes.map((episodeItem, index) => (
+            <div
+              key={episodeItem.id}
+              className={`bg-white rounded-lg p-4 shadow-sm border ${
+                index === currentEpisode ? 'border-blue-300 ring-2 ring-blue-100' : 'border-gray-200'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-lg font-bold">
+                      Episode {episodeItem.id}: {episodeItem.title}
+                    </h3>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      episodeItem.difficulty === 'Easy' ? 'bg-green-100 text-green-700' :
+                      episodeItem.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {episodeItem.difficulty}
+                    </span>
                   </div>
-                  <div className="space-y-1">
-                    <div className="font-medium">{line.chinese}</div>
-                    <div className="text-sm text-blue-600">({line.pinyin})</div>
-                    <div className="text-gray-700">{line.english}</div>
+                  <p className="text-sm text-gray-600 mb-2">{episodeItem.description}</p>
+                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <span>🎯 {episodeItem.theme}</span>
+                    <span>⏱️ {episodeItem.estimatedTime}</span>
+                    <span>🌏 {episodeItem.culturalFocus}</span>
                   </div>
-                  {line.internalThought && (
-                    <div className="mt-2 bg-yellow-50 rounded p-2 text-sm italic">
-                      💭 {line.internalThought}
+                </div>
+                <div className="text-right">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
+                    episodeItem.completed ? 'bg-green-500 text-white' :
+                    episodeItem.unlocked ? 'bg-blue-500 text-white' :
+                    'bg-gray-300 text-gray-500'
+                  }`}>
+                    {episodeItem.completed ? <Check size={20} /> :
+                     !episodeItem.unlocked ? <Lock size={20} /> :
+                     episodeItem.id}
+                  </div>
+                  {episodeItem.stars > 0 && (
+                    <div className="flex justify-center">
+                      {[...Array(3)].map((_, i) => (
+                        <Star 
+                          key={i} 
+                          className={`w-3 h-3 ${
+                            i < episodeItem.stars ? 'text-yellow-500 fill-current' : 'text-gray-300'
+                          }`} 
+                        />
+                      ))}
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Mini Games */}
-          <div className="bg-white rounded-xl p-6 shadow-lg mb-6">
-            <h3 className="font-bold mb-4 flex items-center gap-2">
-              🎮 Chapter Challenges
-            </h3>
-            <div className="grid gap-4">
-              {selectedChapter.miniGames.map((game, index) => (
-                <div key={index} className="border rounded-lg p-4 hover:bg-gray-50">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-bold">{game.title}</h4>
-                    <div className="flex items-center gap-2">
-                      {gameProgress.gamesCompleted.includes(game.id) && (
-                        <span className="text-green-600">✓</span>
-                      )}
-                      <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                        {game.type}
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-3">{game.description}</p>
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs text-gray-500">
-                      Perfect: +{game.affectionImpact.perfect} ❤️ | 
-                      Good: +{game.affectionImpact.good} ❤️ | 
-                      Poor: {game.affectionImpact.poor} ❤️
-                    </div>
-                    <button
-                      onClick={() => {
-                        setCurrentGame(game)
-                        setCurrentView('game')
-                      }}
-                      disabled={!isUnlocked}
-                      className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 disabled:opacity-50"
-                    >
-                      {gameProgress.gamesCompleted.includes(game.id) ? 'Replay' : 'Play'}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Voice Practice */}
-          <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl p-6 shadow-lg">
-            <h3 className="text-xl font-bold mb-4">🎤 Chapter Finale: Voice Practice</h3>
-            <p className="mb-4 opacity-90">{selectedChapter.voicePractice.scenario}</p>
-            <div className="bg-white bg-opacity-20 rounded p-4 mb-4">
-              <div className="text-sm font-medium mb-2">Objective:</div>
-              <div className="text-sm">{selectedChapter.voicePractice.objective}</div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="text-sm">Affection Reward: +{selectedChapter.voicePractice.affectionReward} ❤️</div>
-              <button
-                onClick={() => setCurrentView('voice')}
-                disabled={!isUnlocked}
-                className="bg-white text-purple-600 px-6 py-3 rounded-lg font-bold hover:bg-gray-100 disabled:opacity-50"
-              >
-                Start Conversation
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Main Story Overview
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 p-4">
-      <div className="max-w-6xl mx-auto">
-        <button
-          onClick={onBack}
-          className="mb-6 flex items-center gap-2 text-blue-600 hover:text-blue-700"
-        >
-          <ArrowRight className="w-4 h-4 rotate-180" />
-          Back to Learning Arcs
-        </button>
-
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            🎭 Taiwan Romance Drama Story
-          </h1>
-          <p className="text-lg text-gray-600 mb-6">
-            Follow your complete love story from nervous transfer student to romantic confession!
-          </p>
-        </div>
-
-        {/* Progress Dashboard */}
-        <div className="grid lg:grid-cols-3 gap-6 mb-8">
-          {/* Overall Affection */}
-          <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-pink-200">
-            <h3 className="font-bold mb-4 flex items-center gap-2">
-              ❤️ Romance Level
-            </h3>
-            <div className="text-center mb-4">
-              <div className="text-3xl font-bold text-pink-600">{gameProgress.totalAffection}</div>
-              <div className="text-sm text-gray-600">Total Affection</div>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
-              <div
-                className="bg-gradient-to-r from-pink-400 to-red-500 h-3 rounded-full transition-all"
-                style={{ width: `${Math.min(100, (gameProgress.totalAffection / 200) * 100)}%` }}
-              />
-            </div>
-            <div className="text-center">
-              <span className={`text-sm px-3 py-1 rounded-full ${getAffectionStatus().color} bg-opacity-20`}>
-                {getAffectionStatus().emoji} {getAffectionStatus().text}
-              </span>
-            </div>
-            {recentAffectionChange !== 0 && (
-              <div className={`text-center mt-2 text-sm font-bold ${
-                recentAffectionChange > 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {recentAffectionChange > 0 ? '+' : ''}{recentAffectionChange} ❤️
               </div>
-            )}
-          </div>
-
-          {/* Story Progress */}
-          <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-blue-200">
-            <h3 className="font-bold mb-4 flex items-center gap-2">
-              📖 Story Progress
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span>Current Chapter:</span>
-                <span className="font-bold">{gameProgress.currentChapter}/5</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Completed:</span>
-                <span className="font-bold">{gameProgress.chaptersCompleted.length}/5</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Perfect Chapters:</span>
-                <span className="font-bold">{gameProgress.perfectChapters.length}</span>
-              </div>
-            </div>
-            <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-blue-500 h-2 rounded-full"
-                style={{ width: `${(gameProgress.chaptersCompleted.length / 5) * 100}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Story Ending Prediction */}
-          <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-purple-200">
-            <h3 className="font-bold mb-4 flex items-center gap-2">
-              🔮 Ending Prediction
-            </h3>
-            <div className="space-y-2 text-sm">
-              <div className={`p-2 rounded ${
-                gameProgress.totalAffection >= STORY_ENDINGS.PERFECT ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'
-              }`}>
-                💕 Perfect Love (200+): {gameProgress.totalAffection >= STORY_ENDINGS.PERFECT ? 'Achieved!' : `Need ${STORY_ENDINGS.PERFECT - gameProgress.totalAffection} more`}
-              </div>
-              <div className={`p-2 rounded ${
-                gameProgress.totalAffection >= STORY_ENDINGS.GOOD ? 'bg-pink-100 text-pink-800' : 'bg-gray-100 text-gray-600'
-              }`}>
-                😍 Happy Romance (150+): {gameProgress.totalAffection >= STORY_ENDINGS.GOOD ? 'Achieved!' : `Need ${STORY_ENDINGS.GOOD - gameProgress.totalAffection} more`}
-              </div>
-              <div className={`p-2 rounded ${
-                gameProgress.totalAffection >= STORY_ENDINGS.OKAY ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600'
-              }`}>
-                😊 Good Friends (100+): {gameProgress.totalAffection >= STORY_ENDINGS.OKAY ? 'Achieved!' : `Need ${STORY_ENDINGS.OKAY - gameProgress.totalAffection} more`}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Story Chapters */}
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-center mb-6">📚 Your Love Story Chapters</h2>
-          
-          {storyChapters.map((chapter, index) => {
-            const isUnlocked = chapter.id <= gameProgress.currentChapter
-            const isCompleted = gameProgress.chaptersCompleted.includes(chapter.id)
-            const isPerfect = gameProgress.perfectChapters.includes(chapter.id)
-            const canAccess = isUnlocked && (chapter.id === 1 || gameProgress.chaptersCompleted.includes(chapter.id - 1))
-
-            return (
-              <div
-                key={chapter.id}
-                className={`bg-white rounded-xl p-6 shadow-lg border-2 cursor-pointer transition-all ${
-                  isCompleted ? 'border-green-300' :
-                  canAccess ? 'border-blue-300 hover:border-blue-400' :
-                  'border-gray-200 opacity-60'
-                }`}
-                onClick={() => canAccess && setSelectedChapter(chapter) && setCurrentView('chapter')}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg ${
-                        isCompleted ? 'bg-green-500' :
-                        canAccess ? 'bg-blue-500' :
-                        'bg-gray-400'
-                      }`}>
-                        {isCompleted ? '✓' : chapter.id}
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold">Chapter {chapter.id}: {chapter.title}</h3>
-                        <p className="text-gray-600">{chapter.subtitle}</p>
-                      </div>
-                    </div>
-                    <p className="text-gray-600 mb-4">{chapter.description}</p>
+              
+              {/* Scenes Grid */}
+              {episodeItem.unlocked && (
+                <div className="grid gap-2">
+                  {episodeItem.scenes.map((sceneItem, sceneIndex) => {
+                    const isCompleted = userProgress.completedScenes.includes(sceneItem.id)
+                    const isUnlocked = sceneIndex === 0 || userProgress.completedScenes.includes(episodeItem.scenes[sceneIndex - 1]?.id)
                     
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span>📍 {chapter.setting}</span>
-                      <span>🕐 {chapter.timeOfDay}</span>
-                      <span>🎯 Min: {chapter.requiredAffection} ❤️</span>
-                    </div>
-                  </div>
-
-                  <div className="text-center ml-4">
-                    {isPerfect && (
-                      <div className="text-yellow-500 text-2xl mb-2">⭐</div>
-                    )}
-                    {isCompleted && (
-                      <div className="text-green-600 font-bold text-sm">Completed</div>
-                    )}
-                    {canAccess && !isCompleted && (
-                      <div className="text-blue-600 font-bold text-sm">Available</div>
-                    )}
-                    {!canAccess && (
-                      <div className="text-gray-400 text-sm">🔒 Locked</div>
-                    )}
-                  </div>
+                    return (
+                      <div
+                        key={sceneItem.id}
+                        className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                          isCompleted ? 'bg-green-50 border-green-200' :
+                          isUnlocked ? 'bg-blue-50 border-blue-200 hover:bg-blue-100' :
+                          'bg-gray-100 border-gray-200 opacity-60 cursor-not-allowed'
+                        }`}
+                        onClick={() => isUnlocked && !isCompleted && startScene(sceneIndex)}
+                      >
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                          isCompleted ? 'bg-green-500 text-white' :
+                          isUnlocked ? 'bg-blue-500 text-white' :
+                          'bg-gray-300 text-gray-500'
+                        }`}>
+                          {isCompleted ? <Check size={12} /> :
+                           !isUnlocked ? <Lock size={12} /> :
+                           sceneIndex + 1}
+                        </div>
+                        
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-sm">{sceneItem.title}</h4>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="text-gray-500">📍 {sceneItem.setting}</span>
+                            {sceneItem.voiceChallenge && (
+                              <span className="bg-purple-100 text-purple-600 px-2 py-1 rounded-full">
+                                🎤 Voice
+                              </span>
+                            )}
+                            {sceneItem.timedChallenge && (
+                              <span className="bg-red-100 text-red-600 px-2 py-1 rounded-full">
+                                ⏱️ Timed
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="text-right">
+                          {isCompleted && (
+                            <div className="text-green-600 text-xs font-bold">✓ Done</div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
-
-                {/* Chapter Preview */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div className="bg-blue-50 rounded p-2">
-                    <div className="font-medium text-blue-800">Vocabulary</div>
-                    <div className="text-blue-600">{chapter.keyVocabulary.length} new words</div>
-                  </div>
-                  <div className="bg-purple-50 rounded p-2">
-                    <div className="font-medium text-purple-800">Mini-Games</div>
-                    <div className="text-purple-600">{chapter.miniGames.length} challenges</div>
-                  </div>
-                  <div className="bg-pink-50 rounded p-2">
-                    <div className="font-medium text-pink-800">Voice Practice</div>
-                    <div className="text-pink-600">+{chapter.voicePractice.affectionReward} ❤️ reward</div>
-                  </div>
-                </div>
-
-                {/* Affection Requirement Warning */}
-                {gameProgress.totalAffection < chapter.requiredAffection && canAccess && (
-                  <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded p-3">
-                    <div className="text-yellow-800 text-sm">
-                      ⚠️ Warning: You need {chapter.requiredAffection} affection to continue the story after this chapter. 
-                      Current: {gameProgress.totalAffection} ❤️
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
+              )}
+            </div>
+          ))}
         </div>
-
-        {/* Story Failure Warning */}
-        {gameProgress.totalAffection < 50 && gameProgress.currentChapter > 1 && (
-          <div className="mt-8 bg-red-50 border-2 border-red-200 rounded-xl p-6 text-center">
-            <div className="text-red-800">
-              <h3 className="text-xl font-bold mb-2">⚠️ Story at Risk!</h3>
-              <p className="mb-4">Your affection level is too low. If you can't improve your relationship, the story may end badly!</p>
-              <div className="text-sm">Current affection: {gameProgress.totalAffection} ❤️ | Minimum needed: 50 ❤️</div>
-            </div>
-          </div>
-        )}
-
-        {/* Story Complete */}
-        {gameProgress.storyEnding !== 'incomplete' && (
-          <div className="mt-8 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl p-8 text-center">
-            <h2 className="text-3xl font-bold mb-4">🎭 Story Complete!</h2>
-            <div className="text-6xl mb-4">
-              {gameProgress.storyEnding === 'perfect' ? '💕' :
-               gameProgress.storyEnding === 'good' ? '😍' :
-               gameProgress.storyEnding === 'okay' ? '😊' :
-               gameProgress.storyEnding === 'bad' ? '😔' : '💔'}
-            </div>
-            <div className="text-xl mb-2">
-              {gameProgress.storyEnding === 'perfect' ? 'Perfect Love Story!' :
-               gameProgress.storyEnding === 'good' ? 'Happy Romance!' :
-               gameProgress.storyEnding === 'okay' ? 'Close Friends Forever' :
-               gameProgress.storyEnding === 'bad' ? 'Distant but Polite' : 'Story Failed'}
-            </div>
-            <div className="text-sm opacity-90">
-              Final Affection: {gameProgress.totalAffection} ❤️
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )
 }
 
-export default TaiwanRomanceStoryChapters
+export default GamifiedRomanceLearningPath

@@ -25,6 +25,8 @@ interface VoicePracticeProps {
 interface Message {
   type: 'user' | 'ai'
   content: string
+  pinyin?: string // Added pinyin
+  english?: string // Added English translation
   timestamp: Date
   emotion?: string
   audioUrl?: string
@@ -35,8 +37,8 @@ const convertMessagesToDialogueLines = (messages: Message[]): DialogueLine[] => 
     character: msg.type === 'user' ? '小明' : '小愛',
     avatar: msg.type === 'user' ? '🧑‍🎓' : '👩‍🎓',
     chinese: msg.content,
-    pinyin: '',
-    english: '',
+    pinyin: msg.pinyin || '',
+    english: msg.english || '',
     emotion: msg.emotion || 'normal',
   }));
 };
@@ -57,6 +59,7 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
   const audioChunks = useRef<Blob[]>([])
   const [showApiWarning, setShowApiWarning] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [showEnglishTranslation, setShowEnglishTranslation] = useState<number[]>([]);
 
   useEffect(() => {
     if (shouldShowApiWarning()) {
@@ -434,10 +437,28 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
                       </div>
                       <div className="flex-1">
                         <div className="font-medium mb-1">{message.content}</div>
+                        {message.pinyin && <div className="text-sm text-gray-500">{message.pinyin}</div>}
+                        {message.english && showEnglishTranslation.includes(index) && (
+                          <div className={`mt-1 text-sm ${message.type === 'user' ? 'text-white opacity-90' : 'text-gray-600'}`}>{message.english}</div>
+                        )}
                         <div className={`text-xs ${message.type === 'user' ? 'text-white opacity-75' : 'text-gray-500'}`}>
                           {message.timestamp.toLocaleTimeString()}
                         </div>
                       </div>
+                      {message.english && message.type === 'ai' && (
+                        <button
+                          onClick={() => {
+                            if (showEnglishTranslation.includes(index)) {
+                              setShowEnglishTranslation(showEnglishTranslation.filter(i => i !== index));
+                            } else {
+                              setShowEnglishTranslation([...showEnglishTranslation, index]);
+                            }
+                          }}
+                          className="text-xs text-purple-600 hover:text-purple-700 px-2 py-1 rounded-full bg-white bg-opacity-70 ml-2"
+                        >
+                          {showEnglishTranslation.includes(index) ? 'Hide' : 'Translate'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

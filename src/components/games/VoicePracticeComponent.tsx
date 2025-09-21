@@ -48,6 +48,7 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
   const [phraseUsage, setPhraseUsage] = useState<{ [phrase: string]: boolean }>({})
   const [affectionEarned, setAffectionEarned] = useState(0)
   const [inputText, setInputText] = useState('')
+  const [transcribedText, setTranscribedText] = useState(''); // New state for transcribed text
   const [isRecording, setIsRecording] = useState(false)
   const [isAIThinking, setIsAIThinking] = useState(false)
   const [conversationEnded, setConversationEnded] = useState(false)
@@ -133,36 +134,40 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
       audio.play();
     }
   };
-
-  const handleSendMessage = async () => {
-    if (!inputText.trim() || isAIThinking) return;
-
+  
+  // New shared function for sending messages
+  const sendUserMessage = async (messageContent: string) => {
+    if (!messageContent.trim() || isAIThinking) return;
+    
     const userMessage = {
       type: 'user' as const,
-      content: inputText,
+      content: messageContent,
       timestamp: new Date()
     };
-
+    
     setMessages(prev => [...prev, userMessage]);
     setIsAIThinking(true);
-    handlePhraseUsage(inputText);
+    handlePhraseUsage(messageContent);
     
     const dialogueHistory = convertMessagesToDialogueLines([...messages, userMessage]);
-
+    
     try {
       const aiResponse = await getAiResponse({
         chapterId: chapter?.id || 1,
         conversationHistory: dialogueHistory,
-        userTranscription: inputText,
+        userTranscription: messageContent,
       });
-
+      
       processResponse(aiResponse);
     } catch (error) {
       console.error("AI API call failed:", error);
       setIsAIThinking(false);
       setShowApiWarning(true);
     }
-    
+  }
+  
+  const handleSendMessage = () => {
+    sendUserMessage(inputText);
     setInputText('');
   }
   
@@ -183,24 +188,13 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
           const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' });
           audioChunks.current = [];
           
-          setIsAIThinking(true);
+          // Simulate a transcription. In a real app, this would be a call to a speech-to-text API.
+          // For now, let's use the hardcoded phrases to test the flow.
+          const simulatedTranscription = "你好，很高興認識你！"; // Replace with your mock transcription logic
+          setTranscribedText(simulatedTranscription);
           
-          const userTranscription = "The transcribed text will go here.";
-          
-          const dialogueHistory = convertMessagesToDialogueLines(messages);
-
-          try {
-            const aiResponse = await getAiResponse({
-              chapterId: chapter?.id || 1,
-              conversationHistory: dialogueHistory,
-              userTranscription: userTranscription
-            });
-            processResponse(aiResponse);
-          } catch (error) {
-            console.error("AI API call failed:", error);
-            setIsAIThinking(false);
-            setShowApiWarning(true);
-          }
+          // Send the simulated transcription
+          sendUserMessage(simulatedTranscription);
         };
         
         recorder.start();

@@ -63,7 +63,7 @@ export function getAiResponse(context: ApiContext): Promise<AiResponse> {
           "哈哈，這很有趣！你還有什麼想學的嗎？",
           "嗯，我不太懂。你可以再說一次嗎？",
           "哇，你很棒耶！繼續加油！"
-        ]
+        ],
       },
       2: {
         "無聊": [
@@ -82,21 +82,29 @@ export function getAiResponse(context: ApiContext): Promise<AiResponse> {
           "哇，這很有趣！你還有什麼想說的嗎？",
           "嗯，我不太懂。你可以再說一次嗎？",
           "好啊，我很樂意跟你聊這些！"
-        ]
-      }
+        ],
+      },
     };
     
     // Find a relevant mock response based on user input
     const userMessage = context.userTranscription.toLowerCase();
     const chapterResponses = mockResponses[context.chapterId];
-    let responseText = chapterResponses.default[Math.floor(Math.random() * chapterResponses.default.length)];
+    let responseText = '';
     
+    // Check for a specific mock response based on the user's input.
     for (const key in chapterResponses) {
-      if (userMessage.includes(key)) {
-        const matchingResponses = chapterResponses[key];
-        responseText = matchingResponses[Math.floor(Math.random() * matchingResponses.length)];
-        break;
-      }
+        if (key.trim() === "default") continue; // Skip the default key
+        if (userMessage.includes(key.toLowerCase())) {
+            const matchingResponses = chapterResponses[key];
+            responseText = matchingResponses[Math.floor(Math.random() * matchingResponses.length)];
+            break;
+        }
+    }
+
+    // If no specific response is found, use the default response.
+    if (!responseText && chapterResponses.default) {
+        const defaultResponses = chapterResponses.default;
+        responseText = defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
     }
 
     return new Promise(resolve => setTimeout(() => resolve({
@@ -129,10 +137,9 @@ export function getAiResponse(context: ApiContext): Promise<AiResponse> {
     `;
 
     const userPerformanceFeedback = `
-      User Performance Analysis:
-      - User's input: "${context.userTranscription}".
-      - The user needs to use key phrases like: ${chapter.voicePractice.keyPhrases.map(p => p.split('(')[0]).join(', ')}.
-      - When the user uses a key phrase, give a positive and encouraging response.
+      User's input: "${context.userTranscription}".
+      The user needs to use key phrases like: ${chapter.voicePractice.keyPhrases.map(p => p.split('(')[0]).join(', ')}.
+      When the user uses a key phrase, give a positive and encouraging response.
     `;
 
     const systemPrompt = `

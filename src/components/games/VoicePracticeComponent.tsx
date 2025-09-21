@@ -1,6 +1,9 @@
 // src/components/games/VoicePracticeComponent.tsx
 import React, { useState, useEffect, useRef } from 'react'
 import { Mic, MicOff, Send, X, Pause, Play, Volume2, ArrowRight } from 'lucide-react'
+import { getAiResponse } from '../../lib/aiApi'
+import { storyChapters } from '../../data/storyChapters'
+import type { DialogueLine } from '../../types'
 
 interface VoicePracticeProps {
   chapter: {
@@ -24,7 +27,20 @@ interface Message {
   content: string
   timestamp: Date
   emotion?: string
+  audioUrl?: string
 }
+
+// Helper function to convert our Message type to DialogueLine for the API context
+const convertMessagesToDialogueLines = (messages: Message[]): DialogueLine[] => {
+  return messages.map(msg => ({
+    character: msg.type === 'user' ? '小明' : '小愛', // Default characters
+    avatar: msg.type === 'user' ? '🧑‍🎓' : '👩‍🎓',
+    chinese: msg.content,
+    pinyin: '', // Pinyin isn't available in the Message type, so we leave it blank
+    english: '', // English isn't available either
+    emotion: msg.emotion || 'normal',
+  }));
+};
 
 const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onComplete }) => {
   const [sessionStarted, setSessionStarted] = useState(false)
@@ -40,7 +56,6 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
   const audioChunks = useRef<Blob[]>([])
 
-  // Safety check
   if (!chapter || !chapter.voicePractice) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-4">
@@ -97,72 +112,50 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
     }
   }
 
-  const simulateAIResponse = (userInput: string) => {
-    setIsAIThinking(true)
-    handlePhraseUsage(userInput)
-    
-    const responses = {
-      1: [
-        "你的中文說得不錯！我很impressed！",
-        "真的嗎？你覺得台灣怎麼樣？",
-        "我很樂意幫你！我們可以一起練習中文。",
-        "哇，美國一定很不一樣吧？",
-        "你想要我教你一些台灣的話嗎？"
-      ],
-      2: [
-        "哈哈，今天的數學課真的很無聊！",
-        "你寫紙條的想法很有趣！",
-        "我也想和你聊天，但要小心老師！",
-        "想不想一起吃午餐？",
-        "你真的很勇敢呢！"
-      ]
-    }
-
-    const chapterResponses = responses[chapter.id as keyof typeof responses] || responses[1]
-    const randomResponse = chapterResponses[Math.floor(Math.random() * chapterResponses.length)]
-    
-    setTimeout(() => {
-      setIsAIThinking(false)
-      setMessages(prev => [...prev, {
-        type: 'ai',
-        content: randomResponse,
-        timestamp: new Date(),
-        emotion: 'happy'
-      }])
-      
-      if (messages.length >= 8) {
-        setCurrentScene(prev => Math.min(prev + 1, 2))
-      }
-      
-      if (messages.length >= 12) {
-        setTimeout(() => {
-          setConversationEnded(true)
-        }, 2000)
-      }
-    }, 1500 + Math.random() * 1000)
-  }
-
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputText.trim()) return
 
-    setMessages(prev => [...prev, {
-      type: 'user',
+    const userMessage = {
+      type: 'user' as const,
       content: inputText,
       timestamp: new Date()
-    }])
+    }
 
-    simulateAIResponse(inputText)
+    setMessages(prev => [...prev, userMessage])
+    setIsAIThinking(true)
+    handlePhraseUsage(inputText)
+    
+    const dialogueHistory = convertMessagesToDialogueLines([...messages, userMessage])
+
+    try {
+      const aiResponse = await getAiResponse({
+        chapterId: chapter?.id || 1,
+        conversationHistory: dialogueHistory,
+        userTranscription: inputText,
+      })
+
+      handlePhraseUsage(aiResponse.content)
+      setMessages(prev => [...prev, aiResponse])
+      setIsAIThinking(false)
+
+      if (aiResponse.audioUrl) {
+        const audio = new Audio(aiResponse.audioUrl)
+        audio.play()
+      }
+    } catch (error) {
+      console.error("AI API call failed:", error)
+      setIsAIThinking(false)
+      alert("There was an error communicating with the AI. Please try again.")
+    }
+    
     setInputText('')
   }
   
-  // New microphone handling logic
   const handleMicrophoneToggle = async () => {
     if (isRecording) {
-      // Stop recording
       mediaRecorder?.stop()
       setIsRecording(false)
     } else {
-      // Start recording
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
         const recorder = new MediaRecorder(stream)
@@ -175,19 +168,25 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
           const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' })
           audioChunks.current = []
           
-          // Simulate sending audio to AI backend for transcription
-          console.log('Audio blob ready, simulating AI transcription...')
-          // In a real app, this is where you'd send the blob to a server
+          setIsAIThinking(true)
           
-          // Simulate a transcription response
-          const simulatedTranscription = "你好，很高興認識你！"
+          const userTranscription = "The transcribed text will go here."
           
-          setMessages(prev => [...prev, {
-            type: 'user',
-            content: simulatedTranscription,
-            timestamp: new Date()
-          }])
-          simulateAIResponse(simulatedTranscription)
+          const dialogueHistory = convertMessagesToDialogueLines(messages)
+
+          try {
+            const aiResponse = await getAiResponse({
+              chapterId: chapter?.id || 1,
+              conversationHistory: dialogueHistory,
+              userTranscription: userTranscription
+            })
+            handlePhraseUsage(aiResponse.content)
+            setMessages(prev => [...prev, aiResponse])
+            setIsAIThinking(false)
+          } catch (error) {
+            console.error("AI API call failed:", error)
+            setIsAIThinking(false)
+          }
         }
         
         recorder.start()
@@ -213,7 +212,6 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
     return Math.min(affectionEarned + bonus, chapter.voicePractice.affectionReward)
   }
 
-  // Completion Screen
   if (conversationEnded) {
     const finalScore = calculateFinalScore()
     const phrasesUsed = Object.values(phraseUsage).filter(Boolean).length
@@ -283,13 +281,11 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
     )
   }
 
-  // Pre-session Briefing
   if (!sessionStarted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
-            {/* Header */}
             <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-8">
               <div className="text-center">
                 <div className="text-6xl mb-4">🎭</div>
@@ -299,7 +295,6 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
             </div>
 
             <div className="p-8">
-              {/* Scene Setup */}
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 mb-6">
                 <h3 className="text-xl font-bold text-blue-800 mb-3 flex items-center gap-2">
                   🎬 Your Scene
@@ -311,7 +306,6 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
                 </div>
               </div>
 
-              {/* Key Phrases - Collapsible */}
               <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-6 mb-6">
                 <button 
                   onClick={() => setShowDetails(!showDetails)}
@@ -337,7 +331,6 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
                 )}
               </div>
 
-              {/* Cultural Tips */}
               <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl p-6 mb-8">
                 <h3 className="text-xl font-bold text-yellow-800 mb-3 flex items-center gap-2">
                   🏮 Cultural Acting Tips
@@ -352,7 +345,6 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
                 </div>
               </div>
 
-              {/* Start Button */}
               <button
                 onClick={() => setSessionStarted(true)}
                 className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-6 rounded-2xl font-bold text-xl hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105 shadow-lg"
@@ -366,13 +358,11 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
     )
   }
 
-  // Main Voice Interface
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
       <div className="max-w-4xl mx-auto h-[calc(100vh-2rem)] flex flex-col">
         <div className="bg-white rounded-3xl shadow-2xl flex flex-col h-full overflow-hidden">
           
-          {/* Header */}
           <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="text-2xl">👩‍🎓</div>
@@ -394,7 +384,6 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
             </div>
           </div>
 
-          {/* Director's Note */}
           <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-b p-4">
             <div className="text-sm">
               <span className="font-semibold text-yellow-800">🎭 Director: </span>
@@ -402,7 +391,6 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
             </div>
           </div>
 
-          {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {messages.length === 0 && (
               <div className="text-center py-12">
@@ -442,7 +430,6 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
               </div>
             ))}
 
-            {/* AI Thinking Indicator */}
             {isAIThinking && (
               <div className="flex justify-start">
                 <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl p-4 mr-4 border border-pink-100">
@@ -465,7 +452,6 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
             )}
           </div>
 
-          {/* Progress Tracker */}
           <div className="border-t bg-gray-50 p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm font-semibold text-gray-700">Acting Performance</div>
@@ -488,12 +474,10 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
             </div>
           </div>
 
-          {/* Input Area */}
           <div className="border-t p-4 bg-white">
             <div className="flex items-end gap-3">
-              {/* Voice Button */}
               <button
-                onClick={handleMicrophoneToggle}
+                onClick={() => setIsRecording(!isRecording)}
                 className={`flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center transition-all ${
                   isRecording 
                     ? 'bg-red-500 shadow-lg shadow-red-200 animate-pulse' 
@@ -503,7 +487,6 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
                 {isRecording ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
               </button>
               
-              {/* Text Input */}
               <div className="flex-1 relative">
                 <textarea
                   value={inputText}
@@ -520,7 +503,6 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
                 />
               </div>
               
-              {/* Send Button */}
               <button
                 onClick={handleSendMessage}
                 disabled={!inputText.trim()}

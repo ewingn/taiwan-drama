@@ -161,7 +161,7 @@ const ContactPage = () => {
                 <div className="flex items-start">
                   <MessageCircle className="text-blue-500 w-6 h-6 mr-4 mt-1" />
                   <div>
-                    <h4 className="font-semibold text-gray-900">Discord Community</h4>
+                    <h4 className="font-semibold text-gray-900">Discord Community - Coming Soon!</h4>
                     <p className="text-gray-600">Join our learner community</p>
                     <p className="text-sm text-gray-500">Get help from other learners and our team</p>
                   </div>
@@ -188,7 +188,7 @@ const ContactPage = () => {
                   <div>
                     <h4 className="font-semibold text-gray-900">Social Media</h4>
                     <p className="text-gray-600">Follow us for updates</p>
-                    <p className="text-sm text-gray-500">@TaiwanScript on all platforms</p>
+                    <p className="text-sm text-gray-500">@YouYongShuo</p>
                   </div>
                 </div>
               </div>

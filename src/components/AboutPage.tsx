@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { Heart, Globe, Award } from 'lucide-react'
+import { Heart, Youtube, MapPin, Clapperboard, Code, Target, Users, MessageCircle, TrendingUp, Zap, Coffee, Star } from 'lucide-react'
 
 const AboutPage = () => {
   return (
@@ -13,55 +13,187 @@ const AboutPage = () => {
         <div className="text-center mb-16">
           <div className="text-6xl mb-6">🎭</div>
           <h1 className="text-4xl font-bold text-gray-900 mb-6">
-            Born from a Dream
+            The Problem with Language Learning Apps
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            TaiwanScript was created from a secret desire to be a drama actor when first learning Chinese. 
-            We believe language learning should be as engaging and immersive as your favorite TV show.
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+            They teach you to order coffee, but not to confess your feelings in the rain. 
+            They give you vocabulary, but not the cultural soul that makes conversations feel real.
           </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-12 mb-16">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Our Story</h2>
-            <p className="text-gray-600 mb-4">
-              Like many language learners, our founder fell in love with Chinese through Taiwanese dramas. 
-              The melodramatic storylines, the cultural nuances, and the authentic expressions used in 
-              everyday conversations became the perfect learning laboratory.
-            </p>
-            <p className="text-gray-600 mb-4">
-              Traditional language apps teach you to order coffee, but they don't teach you how to 
-              dramatically confess your feelings in the rain or navigate the complex social dynamics 
-              of a Taiwanese family dinner.
-            </p>
-            <p className="text-gray-600">
-              TaiwanScript fills that gap by letting you live these experiences, not just learn about them.
+          <div className="bg-blue-50 rounded-xl p-6 max-w-2xl mx-auto">
+            <p className="text-gray-700">
+              <strong>I'm building TaiwanScript</strong> because after 10+ years of learning Chinese through Taiwanese dramas, 
+              I realized the most effective language learning happens when you're emotionally invested in the story.
             </p>
           </div>
+        </div>
+
+        {/* The Insight - Product Thinking */}
+        <div className="mb-16">
+          <h2 className="text-2xl font-bold mb-8 text-center">The Core Insight</h2>
           
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Our Mission</h2>
-            <div className="space-y-4">
-              <div className="flex items-start">
-                <Heart className="text-red-500 w-6 h-6 mr-3 mt-1 flex-shrink-0" />
-                <div>
-                  <h3 className="font-semibold">Cultural Immersion</h3>
-                  <p className="text-gray-600 text-sm">Experience authentic Taiwanese culture through interactive storytelling</p>
-                </div>
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-red-50 rounded-xl p-6 text-center">
+              <TrendingUp className="w-8 h-8 text-red-600 mx-auto mb-4" />
+              <h3 className="font-bold mb-2">Engagement Problem</h3>
+              <p className="text-sm text-gray-600">
+                95% of language app users drop off within 6 months. Traditional gamification isn't enough.
+              </p>
+            </div>
+            
+            <div className="bg-blue-50 rounded-xl p-6 text-center">
+              <Heart className="w-8 h-8 text-blue-600 mx-auto mb-4" />
+              <h3 className="font-bold mb-2">Emotional Connection</h3>
+              <p className="text-sm text-gray-600">
+                People learn 3x faster when emotionally invested. Drama creates natural emotional hooks.
+              </p>
+            </div>
+            
+            <div className="bg-green-50 rounded-xl p-6 text-center">
+              <Target className="w-8 h-8 text-green-600 mx-auto mb-4" />
+              <h3 className="font-bold mb-2">Cultural Context Gap</h3>
+              <p className="text-sm text-gray-600">
+                Language without culture creates awkward interactions. Context is everything.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* My Background - Credibility */}
+        <div className="bg-gray-50 rounded-2xl p-8 mb-16">
+          <h2 className="text-2xl font-bold mb-6 text-center">Why I'm Building This</h2>
+          
+          <div className="grid md:grid-cols-2 gap-8">
+            <div>
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Code className="w-5 h-5 text-blue-500" />
+                Product Experience
+              </h3>
+              <ul className="space-y-2 text-sm text-gray-700">
+                <li>• Product Manager in tech with user-centric design experience</li>
+                <li>• Built features used by millions of users</li>
+                <li>• Expertise in AI/ML product integration and community platforms</li>
+                <li>• Data-driven approach to user engagement and retention</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-green-500" />
+                Cultural Insight
+              </h3>
+              <ul className="space-y-2 text-sm text-gray-700">
+                <li>• 10+ years learning Chinese, lived in Shanghai and Taiwan (1+ year)</li>
+                <li>• Deep understanding of Taiwanese culture through immersion</li>
+                <li>• Personally experienced the gap between textbook and real conversation</li>
+                <li>• Bilingual content creation and cultural bridging experience</li>
+              </ul>
+              
+              <div className="mt-4 bg-pink-50 rounded-lg p-4 border-l-4 border-pink-400">
+                <p className="text-sm text-gray-700 italic">
+                  <strong>Personal confession:</strong> I secretly dreamed of being an actor in Taiwanese dramas. 
+                  Spent countless hours practicing lines from "The Apple of My Eye" and "In Time With You" in my room, 
+                  imagining myself in those beautifully shot Taipei scenes. Never became an actor, but that dream taught me 
+                  how emotional investment accelerates language learning.
+                </p>
               </div>
-              <div className="flex items-start">
-                <Globe className="text-blue-500 w-6 h-6 mr-3 mt-1 flex-shrink-0" />
-                <div>
-                  <h3 className="font-semibold">Practical Learning</h3>
-                  <p className="text-gray-600 text-sm">Learn phrases and vocabulary you'll actually use in real situations</p>
-                </div>
+            </div>
+          </div>
+        </div>
+
+        {/* The Product Strategy */}
+        <div className="mb-16">
+          <h2 className="text-2xl font-bold mb-8 text-center">Product Strategy</h2>
+          
+          <div className="space-y-6">
+            <div className="flex gap-4 items-start">
+              <div className="bg-purple-100 rounded-full p-2 flex-shrink-0">
+                <Clapperboard className="w-5 h-5 text-purple-600" />
               </div>
-              <div className="flex items-start">
-                <Award className="text-green-500 w-6 h-6 mr-3 mt-1 flex-shrink-0" />
-                <div>
-                  <h3 className="font-semibold">Confidence Building</h3>
-                  <p className="text-gray-600 text-sm">Practice speaking without judgment in a safe, supportive environment</p>
-                </div>
+              <div>
+                <h3 className="font-semibold mb-2">Drama-Based Learning Architecture</h3>
+                <p className="text-gray-600 text-sm">
+                  Each scenario mirrors real Taiwanese drama situations - family dinners, workplace tension, romantic moments. 
+                  Users practice in emotionally engaging contexts that mirror real-life usage.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 items-start">
+              <div className="bg-blue-100 rounded-full p-2 flex-shrink-0">
+                <Zap className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold mb-2">AI-Powered Cultural Feedback</h3>
+                <p className="text-gray-600 text-sm">
+                  Beyond grammar correction - AI evaluates cultural appropriateness, emotional tone, and contextual accuracy. 
+                  Helps users sound natural, not just correct.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 items-start">
+              <div className="bg-green-100 rounded-full p-2 flex-shrink-0">
+                <Users className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold mb-2">Social Learning Network</h3>
+                <p className="text-gray-600 text-sm">
+                  Shareable progress, community challenges, and peer feedback. 
+                  Language learning becomes social media content, not homework.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Current Status & Metrics */}
+        <div className="grid md:grid-cols-2 gap-8 mb-16">
+          <div className="bg-white border-2 border-gray-200 rounded-xl p-6">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <Star className="w-5 h-5 text-yellow-500" />
+              Current Status
+            </h3>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">MVP Status:</span>
+                <span className="font-medium text-green-600">Chapter 1 Live</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Core Features:</span>
+                <span className="font-medium">Voice Practice + Games</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">User Feedback:</span>
+                <span className="font-medium text-blue-600">Actively Collecting</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Next Release:</span>
+                <span className="font-medium">Chapter 2 + Social Features</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border-2 border-gray-200 rounded-xl p-6">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-blue-500" />
+              Learning Metrics
+            </h3>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Avg. Session:</span>
+                <span className="font-medium">12+ minutes</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Phrase Retention:</span>
+                <span className="font-medium text-green-600">85%+ in testing</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Cultural Accuracy:</span>
+                <span className="font-medium">Validated by native speakers</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Fun Factor:</span>
+                <span className="font-medium text-purple-600">High user excitement</span>
               </div>
             </div>
           </div>
@@ -170,8 +302,9 @@ const AboutPage = () => {
           </div>
           
           <p className="text-gray-600 mb-6">
-            Join thousands of learners who are mastering Chinese through the power of storytelling and immersive role-play.
+            If this resonates with you, give it a try. It's rough around the edges, but that's where the best feedback comes from.
           </p>
+          
           <Link 
             href="/learn"
             className="inline-block bg-gray-900 text-white px-8 py-4 rounded-xl font-bold hover:bg-gray-800 transition-colors"

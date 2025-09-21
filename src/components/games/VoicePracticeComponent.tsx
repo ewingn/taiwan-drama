@@ -1,7 +1,7 @@
 // src/components/games/VoicePracticeComponent.tsx
 import React, { useState, useEffect, useRef } from 'react'
 import { Mic, MicOff, Send, X, Pause, Play, Volume2, ArrowRight } from 'lucide-react'
-import { getAiResponse } from '../../lib/aiApi'
+import { getAiResponse, shouldShowApiWarning } from '../../lib/aiApi'
 import { storyChapters } from '../../data/storyChapters'
 import type { DialogueLine } from '../../types'
 
@@ -30,14 +30,13 @@ interface Message {
   audioUrl?: string
 }
 
-// Helper function to convert our Message type to DialogueLine for the API context
 const convertMessagesToDialogueLines = (messages: Message[]): DialogueLine[] => {
   return messages.map(msg => ({
-    character: msg.type === 'user' ? '小明' : '小愛', // Default characters
+    character: msg.type === 'user' ? '小明' : '小愛',
     avatar: msg.type === 'user' ? '🧑‍🎓' : '👩‍🎓',
     chinese: msg.content,
-    pinyin: '', // Pinyin isn't available in the Message type, so we leave it blank
-    english: '', // English isn't available either
+    pinyin: '',
+    english: '',
     emotion: msg.emotion || 'normal',
   }));
 };
@@ -55,6 +54,18 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
   const [showDetails, setShowDetails] = useState(false)
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
   const audioChunks = useRef<Blob[]>([])
+  const [showApiWarning, setShowApiWarning] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (shouldShowApiWarning()) {
+      setShowApiWarning(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages]);
 
   if (!chapter || !chapter.voicePractice) {
     return (
@@ -112,89 +123,92 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
     }
   }
 
+  const processResponse = (aiResponse: Message) => {
+    handlePhraseUsage(aiResponse.content);
+    setMessages(prev => [...prev, aiResponse]);
+    setIsAIThinking(false);
+
+    if (aiResponse.audioUrl) {
+      const audio = new Audio(aiResponse.audioUrl);
+      audio.play();
+    }
+  };
+
   const handleSendMessage = async () => {
-    if (!inputText.trim()) return
+    if (!inputText.trim() || isAIThinking) return;
 
     const userMessage = {
       type: 'user' as const,
       content: inputText,
       timestamp: new Date()
-    }
+    };
 
-    setMessages(prev => [...prev, userMessage])
-    setIsAIThinking(true)
-    handlePhraseUsage(inputText)
+    setMessages(prev => [...prev, userMessage]);
+    setIsAIThinking(true);
+    handlePhraseUsage(inputText);
     
-    const dialogueHistory = convertMessagesToDialogueLines([...messages, userMessage])
+    const dialogueHistory = convertMessagesToDialogueLines([...messages, userMessage]);
 
     try {
       const aiResponse = await getAiResponse({
         chapterId: chapter?.id || 1,
         conversationHistory: dialogueHistory,
         userTranscription: inputText,
-      })
+      });
 
-      handlePhraseUsage(aiResponse.content)
-      setMessages(prev => [...prev, aiResponse])
-      setIsAIThinking(false)
-
-      if (aiResponse.audioUrl) {
-        const audio = new Audio(aiResponse.audioUrl)
-        audio.play()
-      }
+      processResponse(aiResponse);
     } catch (error) {
-      console.error("AI API call failed:", error)
-      setIsAIThinking(false)
-      alert("There was an error communicating with the AI. Please try again.")
+      console.error("AI API call failed:", error);
+      setIsAIThinking(false);
+      setShowApiWarning(true);
     }
     
-    setInputText('')
+    setInputText('');
   }
   
   const handleMicrophoneToggle = async () => {
     if (isRecording) {
-      mediaRecorder?.stop()
-      setIsRecording(false)
+      mediaRecorder?.stop();
+      setIsRecording(false);
     } else {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-        const recorder = new MediaRecorder(stream)
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const recorder = new MediaRecorder(stream);
         
         recorder.ondataavailable = (event) => {
-          audioChunks.current.push(event.data)
-        }
+          audioChunks.current.push(event.data);
+        };
         
         recorder.onstop = async () => {
-          const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' })
-          audioChunks.current = []
+          const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' });
+          audioChunks.current = [];
           
-          setIsAIThinking(true)
+          setIsAIThinking(true);
           
-          const userTranscription = "The transcribed text will go here."
+          const userTranscription = "The transcribed text will go here.";
           
-          const dialogueHistory = convertMessagesToDialogueLines(messages)
+          const dialogueHistory = convertMessagesToDialogueLines(messages);
 
           try {
             const aiResponse = await getAiResponse({
               chapterId: chapter?.id || 1,
               conversationHistory: dialogueHistory,
               userTranscription: userTranscription
-            })
-            handlePhraseUsage(aiResponse.content)
-            setMessages(prev => [...prev, aiResponse])
-            setIsAIThinking(false)
+            });
+            processResponse(aiResponse);
           } catch (error) {
-            console.error("AI API call failed:", error)
-            setIsAIThinking(false)
+            console.error("AI API call failed:", error);
+            setIsAIThinking(false);
+            setShowApiWarning(true);
           }
-        }
+        };
         
-        recorder.start()
-        setMediaRecorder(recorder)
-        setIsRecording(true)
+        recorder.start();
+        setMediaRecorder(recorder);
+        setIsRecording(true);
       } catch (err) {
-        console.error("Microphone access denied or error: ", err)
-        alert("Please enable microphone access to use voice practice.")
+        console.error("Microphone access denied or error: ", err);
+        alert("Please enable microphone access to use voice practice.");
       }
     }
   }
@@ -363,6 +377,12 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
       <div className="max-w-4xl mx-auto h-[calc(100vh-2rem)] flex flex-col">
         <div className="bg-white rounded-3xl shadow-2xl flex flex-col h-full overflow-hidden">
           
+          {shouldShowApiWarning() && (
+            <div className="bg-yellow-500 text-white p-3 text-center text-sm font-medium">
+              ⚠️ API connection failed. Using mock responses.
+            </div>
+          )}
+
           <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="text-2xl">👩‍🎓</div>
@@ -429,6 +449,7 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
                 </div>
               </div>
             ))}
+            <div ref={messagesEndRef} />
 
             {isAIThinking && (
               <div className="flex justify-start">
@@ -477,7 +498,7 @@ const VoicePracticeComponent: React.FC<VoicePracticeProps> = ({ chapter, onCompl
           <div className="border-t p-4 bg-white">
             <div className="flex items-end gap-3">
               <button
-                onClick={() => setIsRecording(!isRecording)}
+                onClick={handleMicrophoneToggle}
                 className={`flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center transition-all ${
                   isRecording 
                     ? 'bg-red-500 shadow-lg shadow-red-200 animate-pulse' 

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import MatchingGameComponent from './games/MatchingGameComponent'
 import ConnectionsGameComponent from './games/ConnectionsgameComponent'
+import QuickfireGameComponent from './games/QuickfireGameComponent'
 import VoicePracticeComponent from './games/VoicePracticeComponent'
 import ChapterDetailView from './romance/ChapterDetailView'
 import StoryOverviewView from './romance/StoryOverviewView'
@@ -117,6 +118,13 @@ const RomanceLearningPath: React.FC<RomanceLearningPathProps> = ({ onBack }) => 
       case 'connections':
         return (
           <ConnectionsGameComponent
+            game={currentGame}
+            onComplete={(success, score) => handleGameComplete(success, score, currentGame)}
+          />
+        )
+      case 'quickfire':
+        return (
+          <QuickfireGameComponent
             game={currentGame}
             onComplete={(success, score) => handleGameComplete(success, score, currentGame)}
           />

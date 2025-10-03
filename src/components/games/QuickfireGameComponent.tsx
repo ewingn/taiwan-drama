@@ -62,66 +62,70 @@ const ShareableResultCard: React.FC<{
   }
 
   return (
-    <div className="bg-white rounded-3xl shadow-2xl overflow-hidden max-w-md mx-auto">
-      <div className="bg-gradient-to-r from-orange-600 via-red-600 to-pink-500 p-6 text-white relative overflow-hidden">
+    <div className="bg-white rounded-3xl shadow-2xl overflow-hidden max-w-md mx-auto border-2 border-orange-200">
+      <div className="bg-gradient-to-r from-orange-600 via-red-600 to-pink-500 p-8 text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-white bg-opacity-10 rounded-full -mr-16 -mt-16"></div>
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white bg-opacity-10 rounded-full -ml-12 -mb-12"></div>
         <div className="relative z-10 text-center">
-          <div className="text-5xl mb-3">⚡</div>
-          <h3 className="text-xl font-bold mb-1">TaiwanScript Results</h3>
+          <div className="text-6xl mb-4 animate-bounce">⚡</div>
+          <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">TaiwanScript Results</h3>
           <p className="text-sm opacity-90">Speed Note Writing</p>
         </div>
       </div>
 
       <div className="p-6">
         <div className="text-center mb-6">
-          <div className="text-6xl mb-3">{perfectScore ? '🌟' : score >= 90 ? '⚡' : '🔥'}</div>
-          <div className="text-3xl font-bold text-gray-800 mb-2">{score}%</div>
+          <div className="text-7xl mb-4 animate-pulse">
+            {perfectScore ? '🌟' : score >= 90 ? '⚡' : '🔥'}
+          </div>
+          <div className="text-4xl font-bold text-gray-800 mb-2">{score}%</div>
           <div className="text-sm text-gray-600 mb-4">{chapterTitle}</div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="bg-orange-50 rounded-xl p-4 text-center">
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 text-center border border-orange-200">
             <div className="flex items-center justify-center mb-2">
               <Zap className="w-5 h-5 text-orange-600 mr-1" />
-              <span className="font-bold text-orange-800">{completedItems}/{totalItems}</span>
+              <span className="font-bold text-orange-800 text-xl">{completedItems}/{totalItems}</span>
             </div>
-            <div className="text-xs text-orange-600">Speed Matches</div>
+            <div className="text-xs text-orange-600 font-medium">Speed Matches</div>
           </div>
           
-          <div className="bg-red-50 rounded-xl p-4 text-center">
+          <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-4 text-center border border-red-200">
             <div className="flex items-center justify-center mb-2">
               <Timer className="w-5 h-5 text-red-600 mr-1" />
-              <span className="font-bold text-red-800">{timeSpent}s</span>
+              <span className="font-bold text-red-800 text-xl">{timeSpent}s</span>
             </div>
-            <div className="text-xs text-red-600">Lightning Fast</div>
+            <div className="text-xs text-red-600 font-medium">Lightning Fast</div>
           </div>
           
-          <div className="bg-pink-50 rounded-xl p-4 text-center">
+          <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl p-4 text-center border border-pink-200">
             <div className="flex items-center justify-center mb-2">
               <Heart className="w-5 h-5 text-pink-600 mr-1" />
-              <span className="font-bold text-pink-800">+{affectionEarned}</span>
+              <span className="font-bold text-pink-800 text-xl">+{affectionEarned}</span>
             </div>
-            <div className="text-xs text-pink-600">Affection</div>
+            <div className="text-xs text-pink-600 font-medium">Affection</div>
           </div>
           
-          <div className="bg-yellow-50 rounded-xl p-4 text-center">
+          <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-4 text-center border border-yellow-200">
             <div className="flex items-center justify-center mb-2">
               <Trophy className="w-5 h-5 text-yellow-600 mr-1" />
-              <span className="font-bold text-yellow-800">{streak}</span>
+              <span className="font-bold text-yellow-800 text-xl">{streak}</span>
             </div>
-            <div className="text-xs text-yellow-600">Day Streak</div>
+            <div className="text-xs text-yellow-600 font-medium">Day Streak</div>
           </div>
         </div>
 
         {perfectScore && (
-          <div className="bg-gradient-to-r from-yellow-100 to-orange-100 rounded-xl p-4 mb-6 border border-yellow-200">
+          <div className="bg-gradient-to-r from-yellow-100 to-orange-100 rounded-xl p-4 mb-6 
+                          border-2 border-yellow-300 shadow-lg">
             <div className="text-center">
               <div className="flex justify-center mb-2">
-                <Star className="w-5 h-5 text-yellow-600 fill-current" />
-                <Star className="w-5 h-5 text-yellow-600 fill-current" />
-                <Star className="w-5 h-5 text-yellow-600 fill-current" />
+                <Star className="w-5 h-5 text-yellow-600 fill-current animate-pulse" />
+                <Star className="w-6 h-6 text-yellow-600 fill-current mx-1 animate-pulse" />
+                <Star className="w-5 h-5 text-yellow-600 fill-current animate-pulse" />
               </div>
-              <div className="font-bold text-yellow-800">Lightning Speed!</div>
+              <div className="font-bold text-yellow-800 text-lg">Lightning Speed! Perfect! 🌟</div>
             </div>
           </div>
         )}
@@ -129,17 +133,21 @@ const ShareableResultCard: React.FC<{
         <div className="space-y-3">
           <button
             onClick={() => setShowShare(!showShare)}
-            className="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white py-3 rounded-xl font-bold hover:from-orange-700 hover:to-red-700 transition-all flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white py-4 rounded-xl 
+                       font-bold hover:from-orange-700 hover:to-red-700 hover:shadow-xl hover:scale-105 
+                       transition-all duration-300 flex items-center justify-center gap-2 shadow-lg"
           >
             <Share2 className="w-5 h-5" />
             Share Your Speed!
           </button>
           
           {showShare && (
-            <div className="space-y-2">
+            <div className="space-y-2 animate-in fade-in duration-300">
               <button
                 onClick={() => copyToClipboard('youtube')}
-                className="w-full bg-red-500 text-white py-3 rounded-xl font-semibold hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
+                className="w-full bg-red-500 text-white py-3 rounded-xl font-semibold 
+                           hover:bg-red-600 hover:shadow-lg transition-all duration-300 
+                           flex items-center justify-center gap-2 shadow-md"
               >
                 <Youtube className="w-5 h-5" />
                 Copy for YouTube
@@ -147,7 +155,9 @@ const ShareableResultCard: React.FC<{
               
               <button
                 onClick={() => copyToClipboard('instagram')}
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-colors flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl 
+                           font-semibold hover:from-purple-600 hover:to-pink-600 hover:shadow-lg 
+                           transition-all duration-300 flex items-center justify-center gap-2 shadow-md"
               >
                 <Camera className="w-5 h-5" />
                 Copy for Instagram
@@ -156,7 +166,8 @@ const ShareableResultCard: React.FC<{
           )}
           
           {copied && (
-            <div className="text-center text-green-600 font-medium text-sm">
+            <div className="text-center text-green-600 font-medium text-sm bg-green-50 py-2 rounded-lg 
+                            border border-green-200 animate-in fade-in">
               ✓ Copied to clipboard! Ready to share your speed!
             </div>
           )}
@@ -164,7 +175,10 @@ const ShareableResultCard: React.FC<{
 
         <div className="mt-6 pt-4 border-t border-gray-100 text-center">
           <div className="text-xs text-gray-500 mb-2">Lightning fast Chinese learning!</div>
-          <div className="text-sm font-bold text-orange-600"># TaiwanScript ⚡</div>
+          <div className="text-sm font-bold bg-gradient-to-r from-orange-600 to-red-600 
+                          bg-clip-text text-transparent">
+            # TaiwanScript ⚡
+          </div>
         </div>
       </div>
     </div>
@@ -192,10 +206,10 @@ const QuickfireGameComponent: React.FC<QuickfireGameProps> = ({
   // Safety check for game data
   if (!game || !game.data || !game.data.pairs) {
     return (
-      <div className="bg-white rounded-xl p-6 shadow-lg text-center">
+      <div className="bg-white rounded-2xl p-6 shadow-2xl text-center border border-red-100">
         <h3 className="text-xl font-bold mb-4 text-red-600">Game Loading Error</h3>
         <p className="text-gray-600 mb-4">Unable to load quickfire game data</p>
-        <button onClick={() => onComplete(false, 0)} className="bg-gray-600 text-white px-6 py-3 rounded-lg">
+        <button onClick={() => onComplete(false, 0)} className="bg-gray-600 text-white px-6 py-3 rounded-xl hover:bg-gray-700 transition-colors">
           Back to Chapter
         </button>
       </div>
@@ -243,14 +257,12 @@ const QuickfireGameComponent: React.FC<QuickfireGameProps> = ({
     setTimeout(() => {
       setFeedback(null)
       setUserAnswer('')
-      // Move to next unanswered pair
       const nextPair = game.data.pairs.findIndex((_, index) => 
         index > currentPair && !answeredPairs.includes(index)
       )
       if (nextPair !== -1) {
         setCurrentPair(nextPair)
       } else {
-        // Wrap around to beginning
         const firstUnanswered = game.data.pairs.findIndex((_, index) => 
           !answeredPairs.includes(index) && index !== currentPair
         )
@@ -269,10 +281,13 @@ const QuickfireGameComponent: React.FC<QuickfireGameProps> = ({
 
   if (!gameStarted) {
     return (
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-xl font-bold mb-4">{game.title}</h3>
+      <div className="bg-white rounded-2xl p-6 shadow-2xl border border-orange-100 backdrop-blur-sm">
+        <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-orange-600 to-red-600 
+                       bg-clip-text text-transparent">
+          {game.title}
+        </h3>
         <p className="text-gray-600 mb-6">{game.description}</p>
-        <div className="bg-orange-50 rounded-lg p-4 mb-4">
+        <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-4 mb-4 border border-orange-200">
           <div className="text-sm font-semibold text-orange-800 mb-2">How to Play:</div>
           <ul className="text-xs text-orange-700 space-y-1">
             <li>⚡ Type the English translation as fast as possible</li>
@@ -281,7 +296,12 @@ const QuickfireGameComponent: React.FC<QuickfireGameProps> = ({
             <li>🌟 Perfect score: +{game.affectionImpact.perfect} ❤️</li>
           </ul>
         </div>
-        <button onClick={handleGameStart} className="w-full bg-orange-600 text-white py-3 rounded-lg font-bold hover:bg-orange-700 transition-colors">
+        <button 
+          onClick={handleGameStart} 
+          className="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white py-4 rounded-xl 
+                     font-bold hover:from-orange-700 hover:to-red-700 hover:shadow-xl hover:scale-105 
+                     transition-all duration-300 shadow-lg"
+        >
           ⚡ Start Speed Challenge
         </button>
       </div>
@@ -310,18 +330,21 @@ const QuickfireGameComponent: React.FC<QuickfireGameProps> = ({
             perfectScore={perfectScore}
             streak={userStreak}
           />
-          <div className="text-center">
+          <div className="text-center flex gap-3 justify-center">
             <button
               onClick={() => setShowSharing(false)}
-              className="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-colors mr-4"
+              className="bg-gray-500 text-white px-6 py-3 rounded-xl hover:bg-gray-600 
+                         transition-all duration-300 shadow-md hover:shadow-lg"
             >
               Back to Results
             </button>
             <button 
               onClick={() => onComplete(isSuccess, finalScore)} 
-              className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
+              className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl 
+                         hover:from-green-700 hover:to-emerald-700 hover:shadow-xl hover:scale-105 
+                         transition-all duration-300 shadow-lg font-bold"
             >
-              Continue Story
+              Continue Story →
             </button>
           </div>
         </div>
@@ -329,36 +352,62 @@ const QuickfireGameComponent: React.FC<QuickfireGameProps> = ({
     }
 
     return (
-      <div className="bg-white rounded-xl p-6 shadow-lg text-center">
-        <h3 className="text-xl font-bold mb-4">Lightning Round Complete!</h3>
-        <div className="text-6xl mb-4">{perfectScore ? '⚡' : finalScore >= 90 ? '🔥' : finalScore >= 70 ? '👍' : '💪'}</div>
-        <p className="text-gray-600 mb-2">Speed Score: {finalScore}%</p>
-        <p className="text-gray-600 mb-4">Answered: {score}/{game.data.pairs.length} in {timeTaken}s</p>
+      <div className="bg-white rounded-3xl p-8 shadow-2xl text-center border border-orange-100 
+                      backdrop-blur-sm animate-in fade-in duration-500">
+        <h3 className="text-3xl font-bold mb-4 bg-gradient-to-r from-orange-600 to-red-600 
+                       bg-clip-text text-transparent">
+          Lightning Round Complete!
+        </h3>
+        <div className="text-8xl mb-4 animate-bounce">
+          {perfectScore ? '⚡' : finalScore >= 90 ? '🔥' : finalScore >= 70 ? '👍' : '💪'}
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
+            <div className="text-3xl font-bold text-orange-600 mb-1">{finalScore}%</div>
+            <div className="text-sm text-orange-700 font-medium">Speed Score</div>
+          </div>
+          
+          <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-4 border border-red-200">
+            <div className="text-3xl font-bold text-red-600 mb-1">{score}/{game.data.pairs.length}</div>
+            <div className="text-sm text-red-700 font-medium">in {timeTaken}s</div>
+          </div>
+        </div>
         
         {consecutiveCorrect >= 3 && (
-          <div className="bg-orange-50 rounded-lg p-3 mb-4">
-            <div className="text-orange-800 font-bold">🔥 Speed Streak: {consecutiveCorrect} in a row!</div>
+          <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-4 mb-4 
+                          border-2 border-orange-300 shadow-lg">
+            <div className="text-orange-800 font-bold flex items-center justify-center gap-2">
+              <Zap className="w-5 h-5" />
+              Speed Streak: {consecutiveCorrect} in a row! 🔥
+            </div>
           </div>
         )}
 
-        <div className="bg-gray-50 rounded-lg p-3 mb-4">
-          <div className="text-sm font-semibold text-gray-700">Affection Impact:</div>
-          <div className={`text-sm font-bold ${finalScore >= 90 ? 'text-green-600' : finalScore >= 70 ? 'text-blue-600' : 'text-red-600'}`}>
+        <div className="bg-gradient-to-r from-pink-50 to-red-50 rounded-xl p-4 mb-6 border border-pink-200">
+          <div className="text-sm font-semibold text-gray-700 mb-2">Affection Impact:</div>
+          <div className={`text-2xl font-bold ${
+            finalScore >= 90 ? 'text-green-600' : finalScore >= 70 ? 'text-blue-600' : 'text-red-600'
+          }`}>
             {finalScore >= 90 ? `+${game.affectionImpact.perfect}` : finalScore >= 70 ? `+${game.affectionImpact.good}` : `${game.affectionImpact.poor}`} ❤️
           </div>
         </div>
         
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-3 mb-4">
           <button 
             onClick={() => setShowSharing(true)}
-            className="flex-1 bg-gradient-to-r from-orange-600 to-red-600 text-white py-3 rounded-lg font-semibold hover:from-orange-700 hover:to-red-700 transition-colors flex items-center justify-center gap-2"
+            className="flex-1 bg-gradient-to-r from-orange-600 to-red-600 text-white py-3 rounded-xl 
+                       font-semibold hover:from-orange-700 hover:to-red-700 hover:shadow-xl hover:scale-105 
+                       transition-all duration-300 flex items-center justify-center gap-2 shadow-lg"
           >
             <Share2 className="w-4 h-4" />
             Share Speed
           </button>
           <button 
             onClick={() => onComplete(isSuccess, finalScore)} 
-            className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors"
+            className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl 
+                       hover:from-green-700 hover:to-emerald-700 hover:shadow-xl hover:scale-105 
+                       transition-all duration-300 font-semibold shadow-lg"
           >
             Continue Story
           </button>
@@ -370,38 +419,47 @@ const QuickfireGameComponent: React.FC<QuickfireGameProps> = ({
   const currentQuestion = game.data.pairs[currentPair]
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-lg">
-      <div className="text-center mb-4">
-        <h3 className="text-xl font-bold">{game.title}</h3>
-        <div className="flex items-center justify-center gap-4 mt-2">
-          <div className={`text-2xl font-bold ${timeLeft <= 10 ? 'text-red-600 animate-pulse' : 'text-orange-600'}`}>
+    <div className="bg-white rounded-2xl p-6 shadow-2xl border border-orange-100 backdrop-blur-sm">
+      <div className="text-center mb-6">
+        <h3 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 
+                       bg-clip-text text-transparent mb-3">
+          {game.title}
+        </h3>
+        <div className="flex items-center justify-center gap-6">
+          <div className={`text-3xl font-bold ${
+            timeLeft <= 10 ? 'text-red-600 animate-pulse' : 'text-orange-600'
+          }`}>
             ⏰ {timeLeft}s
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-lg text-gray-600 bg-gray-100 px-4 py-2 rounded-full">
             {score}/{game.data.pairs.length} correct
           </div>
         </div>
       </div>
 
       {/* Progress bar */}
-      <div className="w-full bg-gray-200 rounded-full h-3 mb-6">
+      <div className="w-full bg-gray-200 rounded-full h-3 mb-6 shadow-inner">
         <div
-          className="bg-gradient-to-r from-orange-500 to-red-500 h-3 rounded-full transition-all duration-300"
+          className="bg-gradient-to-r from-orange-500 to-red-500 h-3 rounded-full 
+                     transition-all duration-300 shadow-lg"
           style={{ width: `${(score / game.data.pairs.length) * 100}%` }}
         />
       </div>
 
       {/* Current Question */}
       <div className="text-center mb-6">
-        <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-8 mb-6 border border-orange-200">
-          <div className="text-3xl font-bold text-gray-800 mb-2">{currentQuestion.chinese}</div>
+        <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-8 mb-6 
+                        border-2 border-orange-200 shadow-lg">
+          <div className="text-4xl font-bold text-gray-800 mb-2">{currentQuestion.chinese}</div>
           <div className="text-sm text-gray-500">Type the English translation</div>
         </div>
 
         {/* Feedback */}
         {feedback && (
-          <div className={`text-center p-3 rounded-lg mb-4 ${
-            feedback === 'correct' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          <div className={`text-center p-4 rounded-xl mb-4 font-medium ${
+            feedback === 'correct' 
+              ? 'bg-green-100 text-green-800 border-2 border-green-300' 
+              : 'bg-red-100 text-red-800 border-2 border-red-300'
           }`}>
             {feedback === 'correct' ? '✓ Correct! Lightning fast!' : `✗ "${currentQuestion.english}"`}
           </div>
@@ -414,7 +472,9 @@ const QuickfireGameComponent: React.FC<QuickfireGameProps> = ({
           onChange={(e) => setUserAnswer(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="Type answer here..."
-          className="w-full text-center text-lg p-4 border-2 border-orange-300 rounded-xl focus:border-orange-500 focus:outline-none"
+          className="w-full text-center text-lg p-4 border-2 border-orange-300 rounded-xl 
+                     focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200 
+                     shadow-md"
           disabled={feedback !== null}
           autoFocus
         />
@@ -422,7 +482,10 @@ const QuickfireGameComponent: React.FC<QuickfireGameProps> = ({
         <button
           onClick={handleAnswer}
           disabled={!userAnswer.trim() || feedback !== null}
-          className="w-full mt-4 bg-orange-600 text-white py-3 rounded-xl font-bold hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full mt-4 bg-gradient-to-r from-orange-600 to-red-600 text-white py-4 rounded-xl 
+                     font-bold hover:from-orange-700 hover:to-red-700 disabled:opacity-50 
+                     disabled:cursor-not-allowed hover:shadow-xl hover:scale-105 
+                     transition-all duration-300 shadow-lg"
         >
           Submit Answer
         </button>
@@ -430,9 +493,11 @@ const QuickfireGameComponent: React.FC<QuickfireGameProps> = ({
 
       {/* Consecutive streak indicator */}
       {consecutiveCorrect >= 2 && (
-        <div className="text-center mb-4">
-          <div className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full text-sm font-bold">
-            🔥 {consecutiveCorrect} streak!
+        <div className="text-center mb-4 animate-in fade-in">
+          <div className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full text-sm font-bold 
+                          inline-flex items-center gap-2 border-2 border-yellow-300 shadow-md">
+            <Zap className="w-4 h-4" />
+            {consecutiveCorrect} streak!
           </div>
         </div>
       )}
@@ -440,7 +505,8 @@ const QuickfireGameComponent: React.FC<QuickfireGameProps> = ({
       {/* Skip button */}
       <button
         onClick={() => setGameEnded(true)}
-        className="w-full bg-gray-400 text-white py-2 rounded-lg text-sm hover:bg-gray-500 transition-colors"
+        className="w-full bg-gray-400 text-white py-3 rounded-xl text-sm 
+                   hover:bg-gray-500 transition-colors shadow-md"
       >
         End Game
       </button>

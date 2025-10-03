@@ -137,11 +137,14 @@ const LearnPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
           {arcs.map((arc) => (
-            <div
-              key={arc.id}
-              className={`relative rounded-2xl p-6 sm:p-8 text-white overflow-hidden ${
-                arc.available ? 'cursor-pointer hover:scale-105' : 'cursor-not-allowed opacity-75'
-              } transition-all duration-300`}
+<div
+  key={arc.id}
+  className={`relative rounded-3xl p-6 sm:p-8 text-white overflow-hidden 
+              shadow-2xl border border-white/20 backdrop-blur-sm ${
+    arc.available 
+      ? 'cursor-pointer hover:scale-105 hover:shadow-3xl hover:-translate-y-2' 
+      : 'cursor-not-allowed opacity-75'
+  } transition-all duration-500 ease-out`}
               style={{
                 background: `linear-gradient(135deg, var(--tw-gradient-stops))`,
                 backgroundImage: arc.bgColor.includes('pink') && arc.bgColor.includes('red') 
@@ -181,7 +184,9 @@ const LearnPage = () => {
                   </div>
                 </div>
                 
-                <h3 className="text-xl sm:text-2xl font-bold mb-2">{arc.title}</h3>
+               <h3 className="text-xl sm:text-2xl font-bold mb-2 drop-shadow-lg">
+  {arc.title}
+</h3>
                 <p className="text-base sm:text-lg opacity-90 mb-4">{arc.subtitle}</p>
                 <p className="opacity-80 mb-6 text-sm sm:text-base">{arc.description}</p>
                 

@@ -234,16 +234,19 @@ const StoryOverviewView: React.FC<StoryOverviewProps> = ({
             const canAccess = isUnlocked
 
             return (
-              <div
-                key={chapter.id}
-                className={`bg-white rounded-xl p-6 shadow-lg border-2 transition-all duration-300 ${
-                  isCompleted ? 'border-green-300 bg-green-50' :
-                  canAccess ? 'border-blue-300 hover:border-blue-400 hover:shadow-xl cursor-pointer transform hover:scale-[1.02]' :
-                  'border-gray-200 opacity-60'
-                }`}
-                onClick={() => handleChapterClick(chapter)}
-                style={{ cursor: canAccess ? 'pointer' : 'not-allowed' }}
-              >
+<div
+  key={chapter.id}
+  className={`bg-white rounded-2xl p-6 shadow-2xl border-2 transition-all duration-300
+              backdrop-blur-sm bg-opacity-98 ${
+    isCompleted 
+      ? 'border-green-300 bg-gradient-to-br from-green-50 to-emerald-50' 
+      : canAccess 
+        ? 'border-blue-300 hover:border-blue-400 hover:shadow-3xl cursor-pointer transform hover:scale-[1.02] hover:-translate-y-1' 
+        : 'border-gray-200 opacity-60'
+  }`}
+  onClick={() => handleChapterClick(chapter)}
+  style={{ cursor: canAccess ? 'pointer' : 'not-allowed' }}
+>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-4 mb-3">
@@ -258,7 +261,11 @@ const StoryOverviewView: React.FC<StoryOverviewProps> = ({
                       
                       {/* Chapter Info */}
                       <div className="flex-1">
-                        <h3 className="text-xl font-bold">Chapter {chapter.id}: {chapter.title}</h3>
+                        <h3 className="text-2xl font-bold bg-gradient-to-r from-red-600 to-pink-600 
+               bg-clip-text text-transparent">
+             Chapter {chapter.id}: {chapter.title}
+                        </h3>
+
                         <p className="text-gray-600 text-lg">{chapter.subtitle}</p>
                         <p className="text-gray-500 text-sm mt-1">{chapter.description}</p>
                       </div>

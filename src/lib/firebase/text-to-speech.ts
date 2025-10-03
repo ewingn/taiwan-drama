@@ -87,14 +87,16 @@ class TTSCache {
   set(text: string, options: TTSOptions, audioUrl: string): void {
     const key = this.getCacheKey(text, options)
     
-    // Implement LRU cache
-    if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value
-      this.cache.delete(firstKey)
-    }
-    
-    this.cache.set(key, audioUrl)
-  }
+// Implement LRU cache
+    if (this.cache.size >= this.maxSize) {
+      // FIX: Use the non-null assertion operator (!) because 'size >= maxSize' guarantees the key exists.
+      const firstKey = this.cache.keys().next().value! 
+      
+      this.cache.delete(firstKey)
+    }
+    
+    this.cache.set(key, audioUrl)
+  }
   
   clear(): void {
     this.cache.clear()

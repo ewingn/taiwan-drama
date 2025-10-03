@@ -399,35 +399,45 @@ export class TaiwanScriptConversationEngine {
     
     // Limit cache size
     if (this.cache.size > 100) {
-      const firstKey = this.cache.keys().next().value
+      // FIX: Use the non-null assertion operator (!) because we know the cache size is > 0, 
+      // ensuring the type is 'string' before passing it to delete.
+      const firstKey = this.cache.keys().next().value! 
+      
       this.cache.delete(firstKey)
     }
-  }
+}
   
   // FIX: Removed the unused 'message: string' parameter from the signature
   private getCacheKey(analysis: MessageAnalysis): string {
     return `${this.context.chapter.id}-${analysis.messageType}-${analysis.phrasesFound.join(',')}`
   }
   
-  private enhanceResponse(cached: AIResponse, analysis: MessageAnalysis): AIResponse {
-    // Add fresh timestamp and calculate affection for this specific turn
-    let affectionEarned = cached.affectionEarned || 0
-    
-    // Bonus for newly used key phrases
-    if (analysis.phrasesFound.length > 0) {
-      const newPhrases = analysis.phrasesFound.filter(
-        p => !this.context.userStats.phrasesUsed.has(p)
-      )
-      affectionEarned += newPhrases.length * 8
-    }
-    
-    return {
-      ...cached,
-      timestamp: new Date(),
-      affectionEarned,
-    }
-  }
+// ============================================================
+// PRIVATE METHODS - CACHING
+// ============================================================
+// ... (Lines 368-398 are unchanged)
+
+  private enhanceResponse(cached: AIResponse, analysis: MessageAnalysis): AIResponse {
+    // Add fresh timestamp and calculate affection for this specific turn
+    let affectionEarned = cached.affectionEarned ?? 0
+    
+    // Bonus for newly used key phrases
+    if (analysis.phrasesFound.length > 0) {
+      const newPhrases = analysis.phrasesFound.filter(
+        // FIX: Use non-null assertion (!) on 'p' at line 403 to satisfy the required string type
+        p => !this.context.userStats.phrasesUsed.has(p!)
+      )
+      affectionEarned += newPhrases.length * 8
+    }
+    
+    return {
+      ...cached,
+      timestamp: new Date(),
+      affectionEarned,
+    }
+  }
 }
+// ... (Rest of code is unchanged)
 
 // ============================================================
 // ANALYTICS CLASS

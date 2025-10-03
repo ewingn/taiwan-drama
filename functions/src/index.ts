@@ -1,31 +1,63 @@
+// functions/src/index.ts
+
 import * as functions from 'firebase-functions'
 import { SpeechClient } from '@google-cloud/speech'
 import { TextToSpeechClient } from '@google-cloud/text-to-speech'
-import { VertexAI } from '@google-cloud/aiplatform'
+// FIX 1 (TS2614): Use default import as suggested by the compiler.
+import VertexAI from '@google-cloud/aiplatform' 
+import * as admin from 'firebase-admin'
 
 // Initialize clients
 const speechClient = new SpeechClient()
 const ttsClient = new TextToSpeechClient()
+
+// TS2351 Fix (from earlier): VertexAI is the default export here.
 const vertexAI = new VertexAI({
   project: process.env.GOOGLE_CLOUD_PROJECT_ID!,
   location: 'us-central1',
 })
+admin.initializeApp() 
+
+
+// --- Define Interfaces ---
+interface SpeechToTextData {
+  audio: string
+  languageCode?: string
+  enableAutomaticPunctuation?: boolean
+}
+
+interface TextToSpeechData {
+  text: string 
+  languageCode?: string
+  voiceName?: string
+  speakingRate?: number
+  pitch?: number
+}
+
+interface AiConversationData {
+  prompt: string
+  temperature?: number
+  maxTokens?: number
+}
+
 
 // ============================================================
 // SPEECH-TO-TEXT ENDPOINT
 // ============================================================
-export const speechToText = functions.https.onCall(async (data, context) => {
-  // Verify authentication
-  if (!context.auth) {
+export const speechToText = functions.https.onCall<SpeechToTextData>(
+    // FIX 2 (TS18048 & TS2339): We check if context is null/undefined first, which is mandatory in the v2 environment.
+    async (request, context) => { 
+  
+  if (!context || !context.auth) {
     throw new functions.https.HttpsError(
       'unauthenticated',
-      'Must be authenticated to use speech recognition'
+      'Must be authenticated'
     )
   }
   
-  const { audio, languageCode = 'zh-CN' } = data
+  const { audio, languageCode = 'zh-CN' } = request.data 
   
-  const request = {
+  const requestConfig = {
     audio: {
       content: audio,
     },
@@ -39,7 +71,7 @@ export const speechToText = functions.https.onCall(async (data, context) => {
   }
   
   try {
-    const [response] = await speechClient.recognize(request)
+    const [response] = await speechClient.recognize(requestConfig)
     const transcription = response.results
       ?.map(result => result.alternatives?.[0])
       .filter(Boolean)
@@ -61,8 +93,10 @@ export const speechToText = functions.https.onCall(async (data, context) => {
 // ============================================================
 // TEXT-TO-SPEECH ENDPOINT
 // ============================================================
-export const textToSpeech = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
+export const textToSpeech = functions.https.onCall<TextToSpeechData>(
+    // FIX 2 (TS18048 & TS2339): Add null check for context.
+    async (request, context) => {
+  if (!context || !context.auth) {
     throw new functions.https.HttpsError(
       'unauthenticated',
       'Must be authenticated'
@@ -75,9 +109,9 @@ export const textToSpeech = functions.https.onCall(async (data, context) => {
     voiceName = 'zh-CN-Wavenet-A',
     speakingRate = 1.0,
     pitch = 0,
-  } = data
+  } = request.data 
   
-  const request = {
+  const ttsRequest = {
     input: { text },
     voice: {
       languageCode,
@@ -91,7 +125,7 @@ export const textToSpeech = functions.https.onCall(async (data, context) => {
   }
   
   try {
-    const [response] = await ttsClient.synthesizeSpeech(request)
+    const [response] = await ttsClient.synthesizeSpeech(ttsRequest)
     
     // Convert to base64 data URL
     const audioContent = response.audioContent as Buffer
@@ -108,15 +142,17 @@ export const textToSpeech = functions.https.onCall(async (data, context) => {
 // ============================================================
 // AI CONVERSATION ENDPOINT (Vertex AI / Gemini)
 // ============================================================
-export const aiConversation = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
+export const aiConversation = functions.https.onCall<AiConversationData>(
+    // FIX 2 (TS18048 & TS2339): Add null check for context.
+    async (request, context) => {
+  if (!context || !context.auth) {
     throw new functions.https.HttpsError(
       'unauthenticated',
       'Must be authenticated'
     )
   }
   
-  const { prompt, temperature = 0.8, maxTokens = 500 } = data
+  const { prompt, temperature = 0.8, maxTokens = 500 } = request.data 
   
   try {
     // Use Gemini Pro model

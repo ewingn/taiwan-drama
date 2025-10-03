@@ -114,6 +114,7 @@ export class TaiwanScriptConversationEngine {
     
     // 3. Check cache first (if enabled)
     if (this.config.enableCaching) {
+      // FIX: checkCache now accepts message and analysis to run internal logic
       const cached = this.checkCache(userMessage, analysis)
       if (cached) {
         this.analytics.recordCacheHit()
@@ -126,6 +127,7 @@ export class TaiwanScriptConversationEngine {
     
     // 5. Cache response (if enabled)
     if (this.config.enableCaching) {
+      // FIX: cacheResponse now accepts message and response
       this.cacheResponse(userMessage, response)
     }
     
@@ -366,7 +368,8 @@ export class TaiwanScriptConversationEngine {
   // ============================================================
   
   private checkCache(message: string, analysis: MessageAnalysis): AIResponse | null {
-    const cacheKey = this.getCacheKey(message, analysis)
+    // FIX: Only pass the necessary 'analysis' object for the key
+    const cacheKey = this.getCacheKey(analysis) 
     const cached = this.cache.get(cacheKey)
     
     if (cached) {
@@ -385,7 +388,8 @@ export class TaiwanScriptConversationEngine {
   
   private cacheResponse(message: string, response: AIResponse): void {
     const analysis = this.analyzeUserMessage(message)
-    const cacheKey = this.getCacheKey(message, analysis)
+    // FIX: Only pass the necessary 'analysis' object for the key
+    const cacheKey = this.getCacheKey(analysis) 
     
     this.cache.set(cacheKey, {
       response,
@@ -400,7 +404,8 @@ export class TaiwanScriptConversationEngine {
     }
   }
   
-  private getCacheKey(message: string, analysis: MessageAnalysis): string {
+  // FIX: Removed the unused 'message: string' parameter from the signature
+  private getCacheKey(analysis: MessageAnalysis): string {
     return `${this.context.chapter.id}-${analysis.messageType}-${analysis.phrasesFound.join(',')}`
   }
   

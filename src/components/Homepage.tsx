@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Play, BookOpen, Users, MessageCircle, Star, Mic, Globe, Heart, Eye, CheckCircle, Youtube, Coffee } from 'lucide-react'
+import { Play, BookOpen, Users, MessageCircle, Star, Mic, Globe, Heart, Eye, CheckCircle, Youtube, Coffee, Code } from 'lucide-react'
 
 const Homepage = () => {
   const [activeTab, setActiveTab] = useState('learners')
@@ -384,35 +384,36 @@ const Homepage = () => {
         </section>
       )}
 
-      {/* Community CTA */}
+      {/* Community CTA (FOOTER REPLACEMENT) */}
       <section className="py-20 bg-gradient-to-r from-red-500 to-pink-500">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
           <h2 className="text-3xl font-bold mb-6">
             {activeTab === 'learners' 
-              ? '🌍 Join My Taiwan Love Story' 
-              : '🇹🇼 一起分享台灣的美好'}
+              ? '🌍 Ready to Learn? Need the Code?' 
+              : '🇹🇼 準備好了嗎？想看技術？'}
           </h2>
           <p className="text-xl mb-8 opacity-90">
             {activeTab === 'learners'
-              ? 'Experience the Taiwan that captured my heart through authentic drama-based learning'
-              : '讓我們一起把台灣的溫暖與美好分享給全世界'}
+              ? 'Start your journey or dive into the architecture used to build this AI platform.'
+              : '立刻開始戲劇體驗，或探索我如何使用 Google ADK 實現這個羞恥的夢想。'}
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a 
               href="/learn"
-              className="bg-white text-red-600 px-8 py-4 rounded-full text-lg font-semibold hover:bg-gray-100 transition-colors"
+              className="bg-white text-red-600 px-8 py-4 rounded-full text-lg font-semibold hover:bg-gray-100 transition-colors flex items-center justify-center"
             >
               {activeTab === 'learners' ? 'Start Learning Now' : '立即體驗'}
             </a>
+            {/* 👇 Tech Stack link in the CTA section */}
             <a
-              href="https://www.youtube.com/@YouYong%E8%AF%B4"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="border-2 border-white text-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-white hover:text-red-600 transition-colors"
+              href="/tech-stack"
+              className="border-2 border-white text-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-white hover:text-red-600 transition-colors flex items-center justify-center space-x-2"
             >
-              {activeTab === 'learners' ? 'Follow Development' : '追蹤開發'}
+              <Code className="w-5 h-5" />
+              {activeTab === 'learners' ? 'View Tech Architecture' : '技術架構 (Portfolio)'}
             </a>
+            {/* 👆 */}
           </div>
         </div>
       </section>

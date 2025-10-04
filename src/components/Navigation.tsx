@@ -3,7 +3,6 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-// ⚡️ NEW: Import necessary icons and the useAuth hook
 import { Menu, X, User, Heart, LogOut } from 'lucide-react'
 import { useAuth } from '../lib/auth-context' 
 import { signOut } from 'firebase/auth'
@@ -13,7 +12,6 @@ const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
   
-  // ⚡️ NEW: Use the authentication context
   const { user, profile, progress, loading } = useAuth()
 
   const isActive = (path: string) => {
@@ -129,6 +127,7 @@ const Navigation = () => {
             >
               About
             </Link>
+            {/* Removed Tech Stack from main navigation */}
             <Link
               href="/contact"
               className={`px-3 py-2 text-sm font-medium ${
@@ -138,7 +137,7 @@ const Navigation = () => {
               Contact
             </Link>
 
-            {/* ⚡️ NEW: User Status and Action Button */}
+            {/* ⚡️ User Status and Action Button */}
             <UserStatus />
             <ActionButton />
           </div>
@@ -175,7 +174,7 @@ const Navigation = () => {
             >
               Learn
             </Link>
-            {/* ⚡️ NEW: Profile link in mobile view */}
+            {/* ⚡️ Profile link in mobile view */}
             {user && (
               <Link 
                 href="/profile" 
@@ -185,6 +184,7 @@ const Navigation = () => {
                 Profile
               </Link>
             )}
+            {/* Removed Tech Stack from mobile navigation header */}
             <Link
               href="/about"
               onClick={() => setIsOpen(false)}
@@ -200,9 +200,8 @@ const Navigation = () => {
               Contact
             </Link>
             
-            {/* ⚡️ NEW: Action Button in Mobile View */}
+            {/* ⚡️ Action Button in Mobile View */}
             <div className="pt-4 px-3">
-               {/* Use the ActionButton component, forcing the full width class for mobile */}
               {loading ? (
                 <div className="block w-full bg-gray-200 animate-pulse text-gray-200 px-6 py-2 rounded-full text-center text-base">
                   Loading...

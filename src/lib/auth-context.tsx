@@ -1,4 +1,4 @@
-// src/lib/auth-context.tsx (Conceptual - you will implement this file)
+// src/lib/auth-context.tsx
 'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
@@ -12,7 +12,6 @@ interface AuthContextType {
   profile: UserProfile | null // Your custom Firestore UserProfile
   progress: GameProgress | null // Your custom GameProgress
   loading: boolean
-  // Add sign-in/sign-out methods here later...
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)

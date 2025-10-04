@@ -1,14 +1,14 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-// ⚡️ FIX: Import the Link component from Next.js for navigation
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { LogOut, User, Heart, ChevronRight, Settings, Loader2 } from 'lucide-react'
+import { FirebaseError } from 'firebase/app' // Fixes TypeScript error for FirebaseError
 
 // Import hooks and Firestore functions
 import { useAuth } from '../../lib/auth-context' 
-import { updateUserProfile, updateGameProgress, UserProfile, GameProgress } from '../../lib/firebase/firestore-operations'
+import { updateUserProfile, UserProfile } from '../../lib/firebase/firestore-operations'
 import { auth } from '../../lib/firebase/config'
 import { signOut } from 'firebase/auth'
 
@@ -42,9 +42,6 @@ const ProfilePage = () => {
     try {
       // Call the function to persist the updated profile
       await updateUserProfile(profile.uid, { preferences: newPreferences })
-      
-      // A full production app would also update the local state/context here 
-      // or rely on a real-time listener to trigger the context update.
       setStatusMessage('Preferences updated successfully!')
     } catch (error) {
       console.error("Error updating preferences:", error)
@@ -58,11 +55,10 @@ const ProfilePage = () => {
   // Handle Sign Out
   const handleSignOut = async () => {
     try {
-      await signOut(auth) // Use the auth object imported from config.ts
+      await signOut(auth) 
     } catch (error) {
       console.error("Error signing out:", error)
     }
-    // Redirection is handled by the useEffect listener in the AuthContext
   }
 
   // Show a loading/redirecting state if data is still fetching or user is logging out
@@ -75,12 +71,15 @@ const ProfilePage = () => {
     )
   }
 
+  // Fallback display name
+  const displayName = profile.displayName || profile.email.split('@')[0] || 'User'
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="flex justify-between items-center mb-10">
         <h1 className="text-4xl font-extrabold text-gray-900 flex items-center">
           <User size={32} className="mr-3 text-red-600" />
-          {profile.displayName || "My Profile"}
+          {displayName}'s Dashboard
         </h1>
         <button 
           onClick={handleSignOut}
@@ -100,7 +99,6 @@ const ProfilePage = () => {
 
       {/* ------------------- GAME PROGRESS OVERVIEW ------------------- */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        {/* Total Affection */}
         <StatCard 
           icon={<Heart size={24} className="text-pink-600" />}
           label="Total Affection"
@@ -108,15 +106,13 @@ const ProfilePage = () => {
           color="text-pink-600"
           unit="💖"
         />
-        {/* Chapters Completed */}
         <StatCard 
           icon={<ChevronRight size={24} className="text-red-600" />}
-          label="Chapters Unlocked"
+          label="Chapters Completed"
           value={progress?.chaptersCompleted.length || 0}
           color="text-red-600"
           unit="Arcs"
         />
-        {/* Streak Days */}
         <StatCard 
           icon={<Settings size={24} className="text-gray-600" />}
           label="Total Play Time"
@@ -162,7 +158,7 @@ const ProfilePage = () => {
   )
 }
 
-// --------------------- Helper Components (for clean UI) ---------------------
+// --------------------- Helper Components (Re-use these from the previous step) ---------------------
 
 const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: number | string; color: string; unit: string }> = ({ icon, label, value, color, unit }) => (
     <div className="bg-white shadow-lg rounded-xl p-6 flex items-center space-x-4">
